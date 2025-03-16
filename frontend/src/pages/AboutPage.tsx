@@ -103,24 +103,36 @@ const teamMembers = [
     role: "Founder & Lead Developer",
     bio: "Full-stack developer with a passion for creating tools that help others learn and grow.",
     avatar: ronak,
+    twitter: "https://twitter.com/ronak",
+    github: "https://github.com/R7rainz",
+    linkedin: "https://www.linkedin.com/in/ronak-kamboj-9781a9276",
   },
   {
     name: "Cristiano Ronaldo",
     role: "UX Designer",
     bio: "Focused on creating intuitive and accessible user experiences for developers of all skill levels.",
-    avatar: ronaldo
+    avatar: ronaldo,
+    twitter: "https://twitter.com/Cristiano",
+    github: "https://github.com/ronaldo",
+    linkedin: "https://linkedin.com/in/ronaldo",
   },
   {
     name: "Carlo Ancelloti",
     role: "Backend Engineer",
     bio: "Specializes in performance optimization and data visualization for tracking progress.",
     avatar: doncarlo,
+    twitter: "https://twitter.com/carlo",
+    github: "https://github.com/carlo",
+    linkedin: "https://linkedin.com/in/carlo",
   },
   {
     name: "Vidyut Jammwal",
     role: "Community Manager",
     bio: "Helps users get the most out of CodeQuest Lite and gathers feedback for continuous improvement.",
     avatar: manager,
+    twitter: "https://twitter.com/vidyut",
+    github: "https://github.com/vidyut",
+    linkedin: "https://linkedin.com/in/vidyut",
   },
 ]
 
@@ -263,18 +275,24 @@ const AboutPage: React.FC = () => {
                 <CardContent className="pt-4">
                   <p className="text-center text-muted-foreground text-sm">{member.bio}</p>
                   <div className="flex justify-center gap-2 mt-4">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                      <Twitter size={16} />
-                      <span className="sr-only">Twitter</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                      <Github size={16} />
-                      <span className="sr-only">GitHub</span>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                      <Linkedin size={16} />
-                      <span className="sr-only">LinkedIn</span>
-                    </Button>
+                    <a href={member.twitter} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                        <Twitter size={16} />
+                        <span className="sr-only">Twitter</span>
+                      </Button>
+                    </a>
+                    <a href={member.github} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                        <Github size={16} />
+                        <span className="sr-only">GitHub</span>
+                      </Button>
+                    </a>
+                    <a href={member.linkedin} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                        <Linkedin size={16} />
+                        <span className="sr-only">LinkedIn</span>
+                      </Button>
+                    </a>
                   </div>
                 </CardContent>
               </Card>
