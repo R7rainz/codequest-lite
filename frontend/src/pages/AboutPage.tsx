@@ -403,7 +403,7 @@ const ContactForm = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({name, email, subject, message}), // Ensure all fields are sent
       });
-      console.log(response)
+      //console.log(response)
 
       if (!response.ok) {
         throw new Error("Failed to send message.");
