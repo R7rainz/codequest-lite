@@ -1,7 +1,5 @@
-"use client"
-
 import type React from "react"
-import ronak from "@/assets/pfp.jpeg"
+import rainz from "@/assets/rainz.jpg"
 import ronaldo from "@/assets/ronaldo.webp"
 import doncarlo from "@/assets/carlo.webp"
 import manager from "@/assets/vidyut.jpg"
@@ -102,7 +100,7 @@ const teamMembers = [
     name: "Ronak Kamboj",
     role: "Founder & Lead Developer",
     bio: "Full-stack developer with a passion for creating tools that help others learn and grow.",
-    avatar: ronak,
+    avatar: rainz,
     twitter: "https://twitter.com/ronak",
     github: "https://github.com/R7rainz",
     linkedin: "https://www.linkedin.com/in/ronak-kamboj-9781a9276",

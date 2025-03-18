@@ -1,25 +1,33 @@
-import Header from "@/components/Header"
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import { ThemeProvider } from "./components/theme-provider"
-import HomePage from "./pages/HomePage"
-import AboutPage from "./pages/AboutPage"
-import LoginPage from "./pages/LoginPage"
-import { useState, useEffect } from "react"
-import { getAuth, onAuthStateChanged, signOut, User } from "firebase/auth"
-import SignUpPage from "./pages/SignUpPage"
+import { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import Header from "@/components/Header";
+import HomePage from "./pages/HomePage";
+import AboutPage from "./pages/AboutPage";
+import LoginPage from "./pages/LoginPage";
+import SignUpPage from "./pages/SignUpPage";
+import Dashboard from "./pages/Dashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { ThemeProvider } from "./components/theme-provider";
 
 function App() {
-  const [user, setUser] = useState<User | null>(null)
-  const auth = getAuth()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const auth = getAuth();
 
   useEffect(() => {
-    // Listen for authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser)
-    })
+      setUser(currentUser);
+      setLoading(false);
+    });
 
-    return () => unsubscribe() // Cleanup listener on unmount
-  });
+    return () => unsubscribe();
+  }, [auth]);
+
+  if (loading) {
+    return <p>Loading...</p>;
+  }
+
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
@@ -28,24 +36,17 @@ function App() {
           <Header />
           <main className="flex-1 mt-16">
             <Routes>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <HomePage />} />
               <Route path="/about" element={<AboutPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
+              <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <SignUpPage />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             </Routes>
-            {user ? (
-              <div className="fixed bottom-4 right-4 bg-black p-2 rounded">
-                <p>Logged in as: {user.email}</p>
-                <button onClick={() => signOut(auth)}>Logout</button>
-              </div>
-            ) : (
-              <p className="text-center mt-4">Not logged in</p>
-            )}
           </main>
         </div>
       </Router>
     </ThemeProvider>
-  )
+  );
 }
 
-export default App
+export default App;

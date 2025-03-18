@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect, useRef } from "react"
 import { auth } from "../config/auth"
 import { createUserWithEmailAndPassword } from "firebase/auth"

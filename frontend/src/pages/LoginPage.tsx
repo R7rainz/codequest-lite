@@ -1,4 +1,3 @@
-"use client"
 import { useState, useEffect, useRef } from "react"
 import { login, loginWithGithub, loginWithGoogle } from "../config/auth"
 import { Button } from "@/components/ui/button"
@@ -7,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertCircle, Code, Github, Mail } from 'lucide-react'
 import { Separator } from "@/components/ui/separator"
-import { NavLink } from "react-router-dom"
+import { useNavigate, NavLink } from "react-router-dom"
 // Interactive background component (same as HomePage and AboutPage)
 const ParticleBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -95,6 +94,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsVisible(true)
@@ -112,12 +112,14 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(email, password)
+      navigate("/dashboard");
       // Success handling is likely handled by your auth system redirecting
     } catch (error) {
       setError(`Failed to log in: ${(error as Error).message}`)
     } finally {
       setIsLoading(false)
     }
+
   }
 
   const handleGoogleLogin = async () => {
@@ -126,6 +128,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await loginWithGoogle()
+      navigate("/dashboard");
       // Success handling is likely handled by your auth system redirecting
     } catch (error) {
       setError(`Failed to log in with Google: ${(error as Error).message}`)
@@ -140,6 +143,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await loginWithGithub()
+      navigate("/dashboard");
       // Success handling is likely handled by your auth system redirecting
     } catch (error) {
       setError(`Failed to log in with GitHub: ${(error as Error).message}`)
