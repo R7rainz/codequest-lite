@@ -1,28 +1,44 @@
-import path from "path"
-import tailwindcss from "@tailwindcss/vite"
-import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { visualizer } from "rollup-plugin-visualizer";
+import path from "path";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    visualizer({ open: true }), // This will open a visualization of your bundle after build
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  css: {
+    postcss: "./postcss.config.cjs",
+  },
   server: {
-    host: "localhost", // Allows access via localhost
-    port: 5173, // Default Vite port, change if needed
-    open: true, // Opens the browser on server start
-    strictPort: true, // Ensures the server runs on the specified port or fails
-    cors: true, // Enables CORS
+    host: "localhost",
+    port: 5173,
+    open: true,
+    strictPort: true,
+    cors: true,
     proxy: {
       "/api": {
-        target: "http://localhost:5000", // Change this if your backend runs on a different port
+        target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,
       },
     },
   },
-})
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            return "vendor";
+          }
+        },
+      },
+    },
+  },
+});

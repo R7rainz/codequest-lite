@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
+    "target": "ES2022",  // ✅ Add this line to support private fields (#private)
     "module": "esnext",
     "moduleResolution": "bundler",
     "jsx": "react-jsx",
-    "noEmit": true, // ✅ Required for allowImportingTsExtensions
+    "noEmit": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
