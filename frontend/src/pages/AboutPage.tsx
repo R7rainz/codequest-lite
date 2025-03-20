@@ -395,8 +395,8 @@ const ContactForm = () => {
         subject: "Hello from CodeQuest Lite",
         message: "This is a test message from CodeQuest Lite.",
       */
-
-      const response = await fetch("http://localhost:5000/send-message", {
+      const BASE_URL = process.env.NODE_ENV === "development" ? "http://localhost:5000" : "https://codequest-lite-backend.vercel.app";
+      const response = await fetch(`${BASE_URL}/send-message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({name, email, subject, message}), // Ensure all fields are sent
