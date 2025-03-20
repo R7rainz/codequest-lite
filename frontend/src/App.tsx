@@ -9,6 +9,8 @@ import SignUpPage from "./pages/SignUpPage";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./components/theme-provider";
+import TrackerPage from "./pages/TrackerPage";
+import TagsPage from "./pages/TagsPage";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -41,6 +43,8 @@ function App() {
               <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
               <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <SignUpPage />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/tracker" element={<TrackerPage/>} />
+              <Route path="/tags" element={<TagsPage />} />
             </Routes>
           </main>
         </div>
