@@ -29,6 +29,7 @@ export default defineConfig({
         secure: false,
       },
     },
+    historyApiFallback: true, // 🔥 Ensures routing works on Vercel & localhost
   },
   build: {
     rollupOptions: {
