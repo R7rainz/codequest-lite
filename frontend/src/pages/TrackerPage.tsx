@@ -126,7 +126,7 @@ const AddProblemForm = ({
   const [name, setName] = useState("")
   const [link, setLink] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium")
+  const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Easy")
   const [platform, setPlatform] = useState("")
   const [showLinkInput, setShowLinkInput] = useState(false)
   
@@ -151,7 +151,7 @@ const AddProblemForm = ({
     setName("")
     setLink("")
     setSelectedTags([])
-    setDifficulty("Medium")
+    setDifficulty("Easy")
     setPlatform("")
     onClose()
   }
@@ -268,7 +268,7 @@ const AddProblemForm = ({
                       id="platform"
                       value={platform}
                       onChange={(e) => setPlatform(e.target.value)}
-                      placeholder="e.g., LeetCode, HackerRank"
+                      placeholder="e.g., LeetCode, Codeforce"
                     />
                   </div>
                   
