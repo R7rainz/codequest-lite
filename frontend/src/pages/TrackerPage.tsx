@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Search, LinkIcon, X, Tag, Check, ExternalLink, Calendar, Filter, SortAsc, SortDesc } from 'lucide-react'
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
+import SideNavBar from "../components/SideNavBar"
 
 // Types
 interface Tag {
@@ -165,149 +166,152 @@ const AddProblemForm = ({
   }
 
   return (
+    
     <AnimatePresence>
+      <div><SideNavBar />
       {isOpen && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
-            className="w-full max-w-md"
-            ref={formRef}
-          >
-            <Card className="border-0 shadow-lg bg-card/90 backdrop-blur-md">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Add New Problem</h2>
-                  <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-                    <X size={18} />
-                  </Button>
-                </div>
-                
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <label htmlFor="name" className="text-sm font-medium">
-                      Problem Name
-                    </label>
-                    <Input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="e.g., Two Sum"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="link" className="text-sm font-medium">
-                        Problem Link
-                      </label>
-                      <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 px-2"
-                        onClick={() => setShowLinkInput(!showLinkInput)}
-                      >
-                        {showLinkInput ? (
-                          <X size={14} className="mr-1" />
-                        ) : (
-                          <LinkIcon size={14} className="mr-1" />
-                        )}
-                        {showLinkInput ? "Hide" : "Add Link"}
-                      </Button>
-                    </div>
-                    
-                    {showLinkInput && (
-                      <div className="relative">
-                        <LinkIcon size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          id="link"
-                          value={link}
-                          onChange={(e) => setLink(e.target.value)}
-                          placeholder="https://leetcode.com/problems/..."
-                          className="pl-9"
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Difficulty</label>
-                    <div className="flex gap-2">
-                      {["Easy", "Medium", "Hard"].map((level) => (
-                        <Button
-                          key={level}
-                          type="button"
-                          variant={difficulty === level ? "default" : "outline"}
-                          size="sm"
-                          className={`flex-1 ${
-                            difficulty === level 
-                              ? level === "Easy" 
-                                ? "bg-green-500 hover:bg-green-600" 
-                                : level === "Medium" 
-                                  ? "bg-yellow-500 hover:bg-yellow-600" 
-                                  : "bg-red-500 hover:bg-red-600"
-                              : ""
-                          }`}
-                          onClick={() => setDifficulty(level as "Easy" | "Medium" | "Hard")}
-                        >
-                          {level}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="platform" className="text-sm font-medium">
-                      Platform
-                    </label>
-                    <Input
-                      id="platform"
-                      value={platform}
-                      onChange={(e) => setPlatform(e.target.value)}
-                      placeholder="e.g., LeetCode, Codeforce"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Tags</label>
-                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-md bg-background/50">
-                      {availableTags.map((tag) => (
-                        <Badge
-                          key={tag.id}
-                          variant={selectedTags.includes(tag.id) ? "default" : "outline"}
-                          className={`cursor-pointer ${selectedTags.includes(tag.id) ? tag.color : ""}`}
-                          onClick={() => toggleTag(tag.id)}
-                        >
-                          {tag.name}
-                          {selectedTags.includes(tag.id) && (
-                            <Check size={12} className="ml-1" />
-                          )}
-                        </Badge>
-                      ))}
-                      {availableTags.length === 0 && (
-                        <p className="text-sm text-muted-foreground p-2">
-                          No tags available. Create tags in the Tags page.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="outline" onClick={onClose}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">Add Problem</Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ type: "spring", bounce: 0.3, duration: 0.5 }}
+        className="w-full max-w-md"
+        ref={formRef}
+        >
+        <Card className="border-0 shadow-lg bg-card/90 backdrop-blur-md">
+          <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold">Add New Problem</h2>
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+            <X size={18} />
+            </Button>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+            <label htmlFor="name" className="text-sm font-medium">
+              Problem Name
+            </label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Two Sum"
+              required
+            />
+            </div>
+            
+            <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="link" className="text-sm font-medium">
+              Problem Link
+              </label>
+              <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 px-2"
+              onClick={() => setShowLinkInput(!showLinkInput)}
+              >
+              {showLinkInput ? (
+                <X size={14} className="mr-1" />
+              ) : (
+                <LinkIcon size={14} className="mr-1" />
+              )}
+              {showLinkInput ? "Hide" : "Add Link"}
+              </Button>
+            </div>
+            
+            {showLinkInput && (
+              <div className="relative">
+              <LinkIcon size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="link"
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://leetcode.com/problems/..."
+                className="pl-9"
+              />
+              </div>
+            )}
+            </div>
+            
+            <div className="space-y-2">
+            <label className="text-sm font-medium">Difficulty</label>
+            <div className="flex gap-2">
+              {["Easy", "Medium", "Hard"].map((level) => (
+              <Button
+                key={level}
+                type="button"
+                variant={difficulty === level ? "default" : "outline"}
+                size="sm"
+                className={`flex-1 ${
+                difficulty === level 
+                  ? level === "Easy" 
+                  ? "bg-green-500 hover:bg-green-600" 
+                  : level === "Medium" 
+                    ? "bg-yellow-500 hover:bg-yellow-600" 
+                    : "bg-red-500 hover:bg-red-600"
+                  : ""
+                }`}
+                onClick={() => setDifficulty(level as "Easy" | "Medium" | "Hard")}
+              >
+                {level}
+              </Button>
+              ))}
+            </div>
+            </div>
+            
+            <div className="space-y-2">
+            <label htmlFor="platform" className="text-sm font-medium">
+              Platform
+            </label>
+            <Input
+              id="platform"
+              value={platform}
+              onChange={(e) => setPlatform(e.target.value)}
+              placeholder="e.g., LeetCode, Codeforce"
+            />
+            </div>
+            
+            <div className="space-y-2">
+            <label className="text-sm font-medium">Tags</label>
+            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded-md bg-background/50">
+              {availableTags.map((tag) => (
+              <Badge
+                key={tag.id}
+                variant={selectedTags.includes(tag.id) ? "default" : "outline"}
+                className={`cursor-pointer ${selectedTags.includes(tag.id) ? tag.color : ""}`}
+                onClick={() => toggleTag(tag.id)}
+              >
+                {tag.name}
+                {selectedTags.includes(tag.id) && (
+                <Check size={12} className="ml-1" />
+                )}
+              </Badge>
+              ))}
+              {availableTags.length === 0 && (
+              <p className="text-sm text-muted-foreground p-2">
+                No tags available. Create tags in the Tags page.
+              </p>
+              )}
+            </div>
+            </div>
+            
+            <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit">Add Problem</Button>
+            </div>
+          </form>
+          </CardContent>
+        </Card>
+        </motion.div>
+      </div>
       )}
+      </div>
     </AnimatePresence>
   )
 }
