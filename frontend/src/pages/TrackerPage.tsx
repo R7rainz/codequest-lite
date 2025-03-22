@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Search, LinkIcon, X, Tag, Check, ExternalLink, Calendar, Filter, SortAsc, SortDesc } from 'lucide-react'
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
-import SideNavBar from "../components/SideNavBar"
+import SideNavBar from "@/components/SideNavBar"
 
 // Types
 interface Tag {

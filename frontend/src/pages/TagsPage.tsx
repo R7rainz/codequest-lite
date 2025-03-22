@@ -25,7 +25,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
+import SideNavBar from "@/components/SideNavBar"
 // Types
 interface Tag {
   id: string
@@ -70,6 +70,7 @@ const TagCard = ({
   onDelete: (id: string) => void
 }) => {
   return (
+    <div><SideNavBar />
     <Card className="bg-card/60 backdrop-blur-sm hover:shadow-md transition-shadow">
       <CardContent className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -99,6 +100,7 @@ const TagCard = ({
         </div>
       </CardContent>
     </Card>
+    </div>
   )
 }
 
