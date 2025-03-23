@@ -512,7 +512,7 @@ const Dashboard = () => {
                 <Card className="overflow-hidden">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <BarChart size={18} className="text-primary" />
+                      <BarChart className="text-primary" />
                       Difficulty Breakdown
                     </CardTitle>
                     <CardDescription>Problems by difficulty level</CardDescription>
@@ -722,7 +722,6 @@ const Dashboard = () => {
                             100
                           }
                           className="h-2 bg-muted"
-                          indicatorClassName="bg-green-500"
                         />
                       </div>
 
@@ -743,7 +742,6 @@ const Dashboard = () => {
                             100
                           }
                           className="h-2 bg-muted"
-                          indicatorClassName="bg-yellow-500"
                         />
                       </div>
 
@@ -764,7 +762,6 @@ const Dashboard = () => {
                             100
                           }
                           className="h-2 bg-muted"
-                          indicatorClassName="bg-red-500"
                         />
                       </div>
                     </div>
