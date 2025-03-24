@@ -1,7 +1,4 @@
-"use client"
-
 import type React from "react"
-
 import { getAuth, type User } from "firebase/auth"
 import { useState, useEffect, useRef } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"

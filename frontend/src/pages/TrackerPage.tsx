@@ -8,6 +8,9 @@ import { Plus, Search, LinkIcon, X, Tag, Check, ExternalLink, Calendar, Filter, 
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import SideNavBar from "@/components/SideNavBar"
+import {auth} from "@/config/auth"
+import { collection, addDoc, Timestamp } from "firebase/firestore"
+import { db } from "@/config/config"
 
 // Types
 interface Tag {
@@ -135,9 +138,35 @@ const AddProblemForm = ({
     if (isOpen) onClose()
   })
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async(e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    const user = auth.currentUser;
+
+    if(!user){
+        console.log("No authentication found");
+        return;
+    }
+
+    //problem object
+    const newProblem = {
+      name, 
+      link, 
+      tags: selectedTags,
+      completed: false,
+      difficulty,
+      platform,
+      createdAt: Timestamp.now()
+    }
+
+    try{
+      await addDoc(collection(db, `users/${user.uid}/problems`), newProblem);
+      console.log("Problem added successfully");
+      
+      onAdd(newProblem);
+    }catch(error){
+      console.error("Error adding problems", error);
+    }
     
     onAdd({
       name,
