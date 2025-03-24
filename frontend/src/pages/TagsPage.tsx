@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -26,6 +26,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import SideNavBar from "@/components/SideNavBar"
+import { auth, db } from "@/config/config"
+import {collection, addDoc, getDocs, updateDoc, doc, deleteDoc} from "firebase/firestore"
+import { useAuth } from "@/hooks/useAuth"
+
+
 // Types
 interface Tag {
   id: string
@@ -115,20 +120,61 @@ const TagsPage = () => {
   const [newTagName, setNewTagName] = useState("")
   const [newTagColor, setNewTagColor] = useState("bg-blue-500")
   const [error, setError] = useState("")
+  const currentUser = auth.currentUser;
+
+  useEffect(() =>{
+    if(currentUser){
+      fetchTags();
+    }
+  },[currentUser])
+
+  //fetch tags from firestore
+  const fetchTags = async () => {
+    if(!currentUser) return;
+
+    try{
+      const tagsRef = collection(db, "users", currentUser.uid, "tags");
+      const snapshot = await getDocs(tagsRef);
+      const fetchTags = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Tag[];
+
+      setTags(fetchTags);
+    }catch(error) {
+      console.error("Error fetching tags:", error);
+    }
+  };
 
   // Filter tags based on search query
   const filteredTags = tags.filter((tag) => tag.name.toLowerCase().includes(searchQuery.toLowerCase()))
 
-  const handleAddTag = () => {
+  const handleAddTag = async () => {
     if (!newTagName.trim()) {
       setError("Tag name cannot be empty")
       return
+    }
+
+    if(!currentUser){
+      setError("You must be logged in to add tags:");
+      return;
     }
 
     // Check if tag name already exists
     if (tags.some((tag) => tag.name.toLowerCase() === newTagName.toLowerCase())) {
       setError("A tag with this name already exists")
       return
+    }
+
+    try{
+      const tagsRef = collection(db, "users", currentUser.uid, "tags");
+      const docRef = await addDoc(tagsRef, {name: newTagName, color: newTagColor});
+
+      setTags([...tags, {id: docRef.id, name: newTagName, color: newTagColor}]);
+      resetAndCloseDialog();
+    }catch (error){
+      console.error("Error adding tag:", error);
+      setError("failed to add tag");
     }
 
     const newTag: Tag = {
@@ -139,9 +185,9 @@ const TagsPage = () => {
 
     setTags([...tags, newTag])
     resetAndCloseDialog()
-  }
+  };
 
-  const handleEditTag = () => {
+  const handleEditTag = async () => {
     if (!editingTag) return
 
     if (!newTagName.trim()) {
@@ -155,6 +201,17 @@ const TagsPage = () => {
       return
     }
 
+    try{
+      const tagRef = doc(db, "users", currentUser.uid, "tags", editingTag.id);
+      await updateDoc(tagRef, {name: newTagName, color: newTagColor});
+
+      setTags(tags.map((tag) => (tag.id === editingTag.id ? { ...tag, name: newTagName, color: newTagColor } : tag)));
+      resetAndCloseDialog();
+    }catch(error){
+      console.error("Error updating tag:", error);
+      setError("Failed to update tag");
+    }
+
     setTags((prev) =>
       prev.map((tag) => (tag.id === editingTag.id ? { ...tag, name: newTagName.trim(), color: newTagColor } : tag)),
     )
@@ -162,13 +219,23 @@ const TagsPage = () => {
     resetAndCloseDialog()
   }
 
-  const handleDeleteTag = () => {
-    if (!tagToDelete) return
+  const handleDeleteTag = async () => {
+    if (!tagToDelete) return;
+
+    try{
+      await deleteDoc(doc(db, "users", currentUser.uid, "tags", tagToDelete));
+      setTags(tags.filter((tag) => tag.id !== tagToDelete));
+      setTagToDelete(null);
+      setIsDeleteDialogOpen(false);
+    }catch(error){
+      console.error("Error deleting tag:", error);
+      setError("Failed to delete tag:");
+    }
 
     setTags((prev) => prev.filter((tag) => tag.id !== tagToDelete))
     setTagToDelete(null)
     setIsDeleteDialogOpen(false)
-  }
+  };
 
   const openEditDialog = (tag: Tag) => {
     setEditingTag(tag)
