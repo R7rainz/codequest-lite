@@ -25,7 +25,6 @@ import {
   Code,
   UserIcon,
   ChevronRight,
-  Home,
   Info,
 } from "lucide-react"
 import { motion } from "framer-motion"
@@ -39,7 +38,7 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
   const [isMobile, setIsMobile] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
-  const [hovering, setHovering] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const location = useLocation()
   const auth = getAuth()
   const navigate = useNavigate()
@@ -94,18 +93,27 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current)
     }
-    setHovering(true)
     if (!isMobile) {
       setExpanded(true)
     }
   }
 
   const handleMouseLeave = () => {
-    setHovering(false)
-    if (!isMobile) {
+    if (!isMobile && !isDropdownOpen) {
       hoverTimeoutRef.current = setTimeout(() => {
         setExpanded(false)
       }, 300) // Small delay to prevent flickering
+    }
+  }
+
+  const handleDropdownOpenChange = (open: boolean) => {
+    setIsDropdownOpen(open)
+
+    // If dropdown is closing and mouse is not over sidebar, start collapse timer
+    if (!open && !sidebarRef.current?.matches(":hover")) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setExpanded(false)
+      }, 300)
     }
   }
 
@@ -339,13 +347,13 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
                 </motion.div>
               </div>
               {expanded && (
-                <DropdownMenu>
+                <DropdownMenu onOpenChange={handleDropdownOpenChange}>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full ml-2">
                       <ChevronRight size={16} />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" sideOffset={5} className="z-50">
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
