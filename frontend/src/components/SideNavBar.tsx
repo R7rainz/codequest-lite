@@ -358,7 +358,7 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <NavLink to="/profile" className="flex items-center">
-                        <UserIcon className="mr-2 h-4 w-4" />
+                        <UserIcon className="mr-2 h-4 w-4" />22
                         <span>Profile</span>
                       </NavLink>
                     </DropdownMenuItem>

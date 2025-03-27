@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import {
@@ -162,6 +160,13 @@ const ProfilePage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+
+  const signupDate = user?.metadata?.creationTime 
+    ? new Date(user.metadata.creationTime) 
+    : null;
+
+  // Avoid calling .toLocaleDateString() on null
+  const formattedDate = signupDate ? signupDate.toLocaleDateString() : "N/A";
 
   // Preferences state
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -336,7 +341,7 @@ const ProfilePage: React.FC = () => {
                     <p className="text-muted-foreground text-sm">{email}</p>
 
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Badge variant="secondary">Joined April 2023</Badge>
+                      <Badge variant="secondary">{formattedDate}</Badge> 
                       <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                         Pro Member
                       </Badge>
@@ -409,7 +414,7 @@ const ProfilePage: React.FC = () => {
                       <span className="text-muted-foreground">Problems Solved</span>
                       <span className="font-medium">45</span>
                     </div>
-                    <Progress value={45} max={100} className="h-2" />
+                    <Progress value={45} max={100} className="h-2" /> {/* Need to fetch the problems data from the firebase store */}
                   </div>
 
                   <div className="space-y-2">
@@ -764,7 +769,7 @@ const ProfilePage: React.FC = () => {
                 <TabsContent value="preferences">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Notifications</CardTitle>
+                      <CardTitle>Notifications</CardTitle> {/* Get this functionality running */}
                       <CardDescription>Manage how you receive notifications</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
