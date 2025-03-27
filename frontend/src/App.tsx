@@ -11,6 +11,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./components/theme-provider";
 import TrackerPage from "./pages/TrackerPage";
 import TagsPage from "./pages/TagsPage";
+import ProfilePage from "./pages/ProfilePage";
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -56,6 +57,7 @@ function MainContent({ user }: { user: User | null }) {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/tracker" element={<TrackerPage />} />
           <Route path="/tags" element={<TagsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </main>
     </div>

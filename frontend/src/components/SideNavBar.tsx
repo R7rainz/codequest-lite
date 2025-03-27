@@ -1,7 +1,7 @@
 import type React from "react"
 import { getAuth, type User } from "firebase/auth"
 import { useState, useEffect, useRef } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -357,10 +357,10 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <Link to="/profile" className="flex items-center">
+                      <NavLink to="/profile" className="flex items-center">
                         <UserIcon className="mr-2 h-4 w-4" />
                         <span>Profile</span>
-                      </Link>
+                      </NavLink>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/settings" className="flex items-center">
