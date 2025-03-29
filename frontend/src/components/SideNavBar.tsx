@@ -18,7 +18,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Tags,
-  Settings,
+  // Settings,
   LogOut,
   Menu,
   X,
@@ -122,7 +122,7 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
     { name: "Dashboard", icon: <LayoutDashboard size={20} />, path: "/dashboard" },
     { name: "Tracker", icon: <ListChecks size={20} />, path: "/tracker" },
     { name: "Tags", icon: <Tags size={20} />, path: "/tags" },
-    { name: "Settings", icon: <Settings size={20} />, path: "/settings" },
+    // { name: "Settings", icon: <Settings size={20} />, path: "/settings" },
   ]
 
   const isActive = (path: string) => location.pathname === path
@@ -358,16 +358,16 @@ const SideNavBar: React.FC<SideNavigationProps> = ({ className = "" }) => {
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <NavLink to="/profile" className="flex items-center">
-                        <UserIcon className="mr-2 h-4 w-4" />22
+                        <UserIcon className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                       </NavLink>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
+                    {/* <DropdownMenuItem asChild>
                       <Link to="/settings" className="flex items-center">
                         <Settings className="mr-2 h-4 w-4" />
                         <span>Settings</span>
                       </Link>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-red-500">
                       <LogOut className="mr-2 h-4 w-4" />
