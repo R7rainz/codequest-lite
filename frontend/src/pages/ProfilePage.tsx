@@ -45,6 +45,8 @@ import {
   Download,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "@/config/config"
 
 // Interactive background component (same as other pages)
 const ParticleBackground: React.FC = () => {
@@ -127,19 +129,6 @@ const ParticleBackground: React.FC = () => {
   return <canvas ref={canvasRef} className="absolute inset-0 -z-10 h-full w-full" />
 }
 
-// Sample data for statistics
-const difficultyData = [
-  { name: "Easy", value: 25, color: "#22C55E" },
-  { name: "Medium", value: 15, color: "#F59E0B" },
-  { name: "Hard", value: 5, color: "#EF4444" },
-]
-
-const platformData = [
-  { name: "LeetCode", value: 20, color: "#6366F1" },
-  { name: "HackerRank", value: 15, color: "#8B5CF6" },
-  { name: "CodeSignal", value: 10, color: "#EC4899" },
-]
-
 const ProfilePage: React.FC = () => {
   const auth = getAuth()
   const navigate = useNavigate()
@@ -179,6 +168,52 @@ const ProfilePage: React.FC = () => {
   const [twitterUrl, setTwitterUrl] = useState("")
   const [linkedinUrl, setLinkedinUrl] = useState("")
   const [websiteUrl, setWebsiteUrl] = useState("")
+
+  const platformData = [
+    { name: "LeetCode", value: 20, color: "#6366F1" },
+    { name: "HackerRank", value: 15, color: "#8B5CF6" },
+    { name: "CodeSignal", value: 10, color: "#EC4899" },
+  ]
+
+  const [difficultyData, setdifficultyData] = useState([
+    { name: "Easy", value: 0, color: "#22C55E" },
+    { name: "Medium", value: 0, color: "#F59E0B" },
+    { name: "Hard", value: 0, color: "#EF4444" },
+  ])
+
+  const [problemsSolved, setProblemsSolved] = useState(0)
+  useEffect(() => {
+    const fetchData = async () => {
+      const user = auth.currentUser;
+      if(!user){
+        console.log("No authenticated user.");
+        setIsLoading(false);
+        return;
+      }
+      try{
+        const querySnapshot = await getDocs(collection(db, `users/${user.uid}/problems`))
+        const difficultyCount = {Easy: 0, Medium: 0, Hard: 0};
+
+        querySnapshot.forEach((doc) => {
+          const {difficulty} = doc.data();
+          if(difficultyCount[difficulty] !== undefined) difficultyCount[difficulty]++;
+        });
+        const total = difficultyCount.Easy + difficultyCount.Medium + difficultyCount.Hard;
+        setProblemsSolved(total);
+        setdifficultyData([
+          { name: "Easy", value: difficultyCount.Easy, color: "#22C55E" },
+          { name: "Medium", value: difficultyCount.Medium, color: "#F59E0B" },
+          { name: "Hard", value: difficultyCount.Hard, color: "#EF4444" },
+        ]);
+      }catch(error){
+        console.error("Error fetch problems difficulty", error);
+      } finally{
+        setIsLoading(false);
+      }
+    };
+
+    fetchData(); // Call the fetchData function
+  }, [auth.currentUser]);
 
   // File input ref for avatar upload
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -412,9 +447,11 @@ const ProfilePage: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Problems Solved</span>
-                      <span className="font-medium">45</span>
+                      <div>
+                      <span className="font-medium">{problemsSolved}</span>
+                      </div>
                     </div>
-                    <Progress value={45} max={100} className="h-2" /> {/* Need to fetch the problems data from the firebase store */}
+                    <Progress value={problemsSolved} max={100} className="h-2" /> 
                   </div>
 
                   <div className="space-y-2">

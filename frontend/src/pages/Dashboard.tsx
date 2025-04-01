@@ -42,6 +42,8 @@ import {
 import { format, subDays } from "date-fns"
 import { motion } from "framer-motion"
 import SideNavBar from "@/components/SideNavBar"
+import { auth, db } from "@/config/config"
+import { collection, getDocs } from "firebase/firestore"
 
 // Types
 interface Problem {
@@ -313,6 +315,12 @@ const Dashboard = () => {
   const mediumProblems = sampleProblems.filter((p) => p.difficulty === "Medium").length
   const hardProblems = sampleProblems.filter((p) => p.difficulty === "Hard").length
 
+  const[isLoading, setIsLoading] = useState(false);
+  const [difficultyData, setdifficultyData] = useState([
+      { name: "Easy", value: 0, color: "#22C55E" },
+      { name: "Medium", value: 0, color: "#F59E0B" },
+      { name: "Hard", value: 0, color: "#EF4444" },
+    ])
   // Calculate platform distribution
   const platformData = sampleProblems.reduce((acc: { name: string; value: number }[], problem) => {
     const existingPlatform = acc.find((p) => p.name === problem.platform)
@@ -378,7 +386,39 @@ const Dashboard = () => {
     Hard: "#EF4444",
   }
 
-  return (
+  useEffect(() => {
+    const fetchData = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        console.log("No authenticated user");
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const querySnapshot = await getDocs(collection(db, `users/${user.uid}/problems`));
+        const difficultyCount = { Easy: 0, Medium: 0, Hard: 0 };
+
+        querySnapshot.forEach((doc) => {
+          const { difficulty } = doc.data();
+          if (difficultyCount[difficulty] !== undefined) {
+            difficultyCount[difficulty]++;
+          }
+        });
+        setdifficultyData([
+          { name: "Easy", value: difficultyCount.Easy, color: DIFFICULTY_COLORS.Easy },
+          { name: "Medium", value: difficultyCount.Medium, color: DIFFICULTY_COLORS.Medium },
+          { name: "Hard", value: difficultyCount.Hard, color: DIFFICULTY_COLORS.Hard },
+        ]);
+      } catch (error) {
+        console.error("Error fetching data: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+  
     <div> <SideNavBar />
     <div className="w-full flex-1 bg-background text-foreground overflow-hidden relative">
       <ParticleBackground />
@@ -856,7 +896,7 @@ const Dashboard = () => {
       </div>
     </div>
     </div>
-  )
+  
 }
 
 export default Dashboard
