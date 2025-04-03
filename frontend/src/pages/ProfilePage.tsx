@@ -647,17 +647,17 @@ const ProfilePage: React.FC = () => {
     }
   }*/
 
-  // Update the setup2FA function to use email
-  const setup2FA = async () => {
-    if (!user) return
+  // // Update the setup2FA function to use email
+  // const setup2FA = async () => {
+  //   if (!user) return
 
-    setIs2FADialogOpen(true)
-    setStep2FA("email")
-    setEmailFor2FA(user.email || "")
-    setVerificationCode("")
-    setError("")
-    setIs2FAEmailSent(false)
-  }
+  //   setIs2FADialogOpen(true)
+  //   setStep2FA("email")
+  //   setEmailFor2FA(user.email || "")
+  //   setVerificationCode("")
+  //   setError("")
+  //   setIs2FAEmailSent(false)
+  // }
 
   // Add a function to send verification email
   // const sendVerificationEmail = async () => {
