@@ -1,7 +1,4 @@
-"use client"
-
 import type React from "react"
-
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import SideNavBar from "@/components/SideNavBar"
 import { auth } from "@/config/auth"
-import { collection, addDoc, Timestamp, getDocs, updateDoc, doc } from "firebase/firestore"
+import { collection, addDoc, Timestamp, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore"
 import { db } from "@/config/config"
 
 // Types
@@ -268,6 +265,7 @@ const ProblemCard = ({
   problem,
   tags,
   onToggleComplete,
+  onDelete,
 }: {
   problem: Problem
   tags: {
@@ -276,8 +274,10 @@ const ProblemCard = ({
     color: string
   }[]
   onToggleComplete: (id: string, completed: boolean) => void
+  onDelete: (id: string) => void
 }) => {
   const problemTags = tags.filter((tag) => problem.tags.includes(tag.id))
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   return (
     <Card className={`transition-all duration-300 hover:shadow-md ${problem.completed ? "bg-muted/30" : "bg-card"}`}>
@@ -338,6 +338,28 @@ const ProblemCard = ({
                 </Badge>
               ))}
             </div>
+          </div>
+
+          <div className="relative">
+            {showDeleteConfirm ? (
+              <div className="flex items-center gap-1">
+                <Button variant="destructive" size="sm" className="h-7 px-2" onClick={() => onDelete(problem.id)}>
+                  Delete
+                </Button>
+                <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setShowDeleteConfirm(false)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-100/50"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                <X size={16} />
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>
@@ -468,6 +490,23 @@ const TrackerPage = () => {
     }
   }
 
+  // Add delete problem function
+  const handleDeleteProblem = async (id: string) => {
+    const user = auth.currentUser
+    if (!user) return
+
+    try {
+      // Delete from Firestore
+      const problemRef = doc(db, "users", user.uid, "problems", id)
+      await deleteDoc(problemRef)
+
+      // Update local state
+      setProblems((prev) => prev.filter((problem) => problem.id !== id))
+    } catch (error) {
+      console.error("Error deleting problem", error)
+    }
+  }
+
   const toggleTagFilter = (tagId: string) => {
     setSelectedTags((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
   }
@@ -577,7 +616,13 @@ const TrackerPage = () => {
             <div className="space-y-3">
               {filteredProblems.length > 0 ? (
                 filteredProblems.map((problem) => (
-                  <ProblemCard key={problem.id} problem={problem} tags={tags} onToggleComplete={handleToggleComplete} />
+                  <ProblemCard
+                    key={problem.id}
+                    problem={problem}
+                    tags={tags}
+                    onToggleComplete={handleToggleComplete}
+                    onDelete={handleDeleteProblem}
+                  />
                 ))
               ) : (
                 <div className="text-center py-12 bg-muted/30 rounded-lg">

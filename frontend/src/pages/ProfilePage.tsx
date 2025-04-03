@@ -1,13 +1,16 @@
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import {
-  getAuth,
   updateProfile,
   updateEmail,
   updatePassword,
   type User,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  //multiFactor,
+  type RecaptchaVerifier,
+  getAuth,
+  deleteUser,
 } from "firebase/auth"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
+// Add the missing Mail icon import
 import {
   AlertCircle,
   Camera,
@@ -35,6 +39,7 @@ import {
   Linkedin,
   Lock,
   LogOut,
+  Mail,
   Save,
   Settings,
   Shield,
@@ -44,11 +49,35 @@ import {
   X,
   Download,
 } from "lucide-react"
-import { useNavigate } from "react-router-dom"
-import { collection, getDocs } from "firebase/firestore"
-import { db } from "@/config/config"
+import { NavLink, useNavigate } from "react-router-dom"
+// Import the necessary Firestore functions
+import { db, auth } from "@/config/config"
+import { logout } from "@/config/auth"
+import {
+  collection,
+  getDocs,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  query,
+  where,
+  Timestamp,
+  addDoc,
+  getFirestore,
+  deleteDoc,
+} from "firebase/firestore"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { useDeleteAccount } from "@/hooks/useDeleteAccount"
 
-// Interactive background component (same as other pages)
+// Interactive background component
 const ParticleBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -129,8 +158,21 @@ const ParticleBackground: React.FC = () => {
   return <canvas ref={canvasRef} className="absolute inset-0 -z-10 h-full w-full" />
 }
 
+// User preferences interface
+interface UserPreferences {
+  emailNotifications: boolean
+  weeklyDigest: boolean
+  publicProfile: boolean
+  theme: string
+  bio: string
+  location: string
+  githubUrl: string
+  twitterUrl: string
+  linkedinUrl: string
+  websiteUrl: string
+}
+
 const ProfilePage: React.FC = () => {
-  const auth = getAuth()
   const navigate = useNavigate()
   const [user, setUser] = useState<User | null>(null)
   const [isVisible, setIsVisible] = useState(false)
@@ -141,8 +183,8 @@ const ProfilePage: React.FC = () => {
   // Profile form state
   const [displayName, setDisplayName] = useState("")
   const [email, setEmail] = useState("")
-  const [bio, setBio] = useState("Full-stack developer passionate about algorithms and data structures.")
-  const [location, setLocation] = useState("San Francisco, CA")
+  const [bio, setBio] = useState("")
+  const [location, setLocation] = useState("")
   const [avatarUrl, setAvatarUrl] = useState("")
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
@@ -150,12 +192,23 @@ const ProfilePage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
 
-  const signupDate = user?.metadata?.creationTime 
-    ? new Date(user.metadata.creationTime) 
-    : null;
+  // 2FA state
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false)
+  const [is2FADialogOpen, setIs2FADialogOpen] = useState(false)
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [verificationCode, setVerificationCode] = useState("")
+  const [verificationId, setVerificationId] = useState("")
+  const [step2FA, setStep2FA] = useState<"phone" | "code">("phone")
+  const [recaptchaVerifier, setRecaptchaVerifier] = useState<RecaptchaVerifier | null>(null)
+
+  // Add state for email 2FA
+  const [emailFor2FA, setEmailFor2FA] = useState("")
+  const [is2FAEmailSent, setIs2FAEmailSent] = useState(false)
+
+  const signupDate = user?.metadata?.creationTime ? new Date(user.metadata.creationTime) : null
 
   // Avoid calling .toLocaleDateString() on null
-  const formattedDate = signupDate ? signupDate.toLocaleDateString() : "N/A";
+  const formattedDate = signupDate ? signupDate.toLocaleDateString() : "N/A"
 
   // Preferences state
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -169,64 +222,296 @@ const ProfilePage: React.FC = () => {
   const [linkedinUrl, setLinkedinUrl] = useState("")
   const [websiteUrl, setWebsiteUrl] = useState("")
 
-  const platformData = [
-    { name: "LeetCode", value: 20, color: "#6366F1" },
-    { name: "HackerRank", value: 15, color: "#8B5CF6" },
-    { name: "CodeSignal", value: 10, color: "#EC4899" },
-  ]
-
-  const [difficultyData, setdifficultyData] = useState([
+  // Stats state
+  const [difficultyData, setDifficultyData] = useState([
     { name: "Easy", value: 0, color: "#22C55E" },
     { name: "Medium", value: 0, color: "#F59E0B" },
     { name: "Hard", value: 0, color: "#EF4444" },
   ])
-
   const [problemsSolved, setProblemsSolved] = useState(0)
-  useEffect(() => {
-    const fetchData = async () => {
-      const user = auth.currentUser;
-      if(!user){
-        console.log("No authenticated user.");
-        setIsLoading(false);
-        return;
-      }
-      try{
-        const querySnapshot = await getDocs(collection(db, `users/${user.uid}/problems`))
-        const difficultyCount = {Easy: 0, Medium: 0, Hard: 0};
-
-        querySnapshot.forEach((doc) => {
-          const {difficulty} = doc.data();
-          if(difficultyCount[difficulty] !== undefined) difficultyCount[difficulty]++;
-        });
-        const total = difficultyCount.Easy + difficultyCount.Medium + difficultyCount.Hard;
-        setProblemsSolved(total);
-        setdifficultyData([
-          { name: "Easy", value: difficultyCount.Easy, color: "#22C55E" },
-          { name: "Medium", value: difficultyCount.Medium, color: "#F59E0B" },
-          { name: "Hard", value: difficultyCount.Hard, color: "#EF4444" },
-        ]);
-      }catch(error){
-        console.error("Error fetch problems difficulty", error);
-      } finally{
-        setIsLoading(false);
-      }
-    };
-
-    fetchData(); // Call the fetchData function
-  }, [auth.currentUser]);
+  const [streak, setStreak] = useState(0)
 
   // File input ref for avatar upload
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // const recaptchaContainerRef = useRef<HTMLDivElement>(null)
+
+  // Check if 2FA is enabled
+  // const check2FAStatus = (user: User) => {
+  //   try {
+  //     const multiFactorUser = multiFactor(user)
+  //     const enrolledFactors = multiFactorUser.enrolledFactors
+  //     setIs2FAEnabled(enrolledFactors.length > 0)
+  //   } catch (error) {
+  //     console.error("Error checking 2FA status:", error)
+  //     setIs2FAEnabled(false)
+  //   }
+  // }
+
+  //delete account hook
+  const deleteAccount = useDeleteAccount();
+
+  const [isEmailPasswordUser, setIsEmailPasswordUser] = useState(false);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        // Check if any provider is "password"
+        const hasPasswordProvider = currentUser.providerData.some(
+          (provider) => provider.providerId === "password"
+        );
+        setIsEmailPasswordUser(hasPasswordProvider);
+      } else {
+        setUser(null);
+        setIsEmailPasswordUser(false);
+      }
+    });
+
+    return () => unsubscribe(); // Cleanup listener on unmount
+  }, []);
+
+
+  // Calculate streak
+  const calculateStreak = async (userId: string): Promise<number> => {
+    try {
+      // Get completed problems sorted by date (newest first)
+      const problemsRef = collection(db, `users/${userId}/problems`)
+      const q = query(problemsRef, where("completed", "==", true))
+      const querySnapshot = await getDocs(q)
+
+      const completedProblems: { createdAt: Date }[] = []
+      querySnapshot.forEach((doc) => {
+        const data = doc.data()
+        completedProblems.push({
+          createdAt: data.createdAt?.toDate() || new Date(),
+        })
+      })
+
+      // Sort by date (newest first)
+      completedProblems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+      if (completedProblems.length === 0) return 0
+
+      // Check if there's a problem completed today
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      const latestDate = new Date(completedProblems[0].createdAt)
+      latestDate.setHours(0, 0, 0, 0)
+
+      // If the latest problem is not from today, streak is 0
+      if (latestDate.getTime() !== today.getTime()) return 0
+
+      // Count consecutive days
+      let streak = 1
+      let currentDate = today
+
+      for (let i = 1; i < completedProblems.length; i++) {
+        const prevDay = new Date(currentDate)
+        prevDay.setDate(prevDay.getDate() - 1)
+
+        const problemDate = new Date(completedProblems[i].createdAt)
+        problemDate.setHours(0, 0, 0, 0)
+
+        if (problemDate.getTime() === prevDay.getTime()) {
+          streak++
+          currentDate = prevDay
+        } else if (problemDate.getTime() < prevDay.getTime()) {
+          // We've found a gap, so stop counting
+          break
+        }
+      }
+
+      return streak
+    } catch (error) {
+      console.error("Error calculating streak:", error)
+      return 0
+    }
+  }
+
+  // Save user preferences
+  const saveUserPreferences = async () => {
+    if (!user) return
+
+    setIsLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const userPrefsRef = doc(db, `users/${user.uid}/preferences/settings`)
+
+      const prefsData: UserPreferences = {
+        emailNotifications,
+        weeklyDigest,
+        publicProfile,
+        theme,
+        bio,
+        location,
+        githubUrl,
+        twitterUrl,
+        linkedinUrl,
+        websiteUrl,
+      }
+
+      await setDoc(userPrefsRef, prefsData, { merge: true })
+
+      // Apply theme change immediately
+      document.documentElement.classList.remove("light", "dark")
+      if (theme === "system") {
+        const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+        document.documentElement.classList.add(systemTheme)
+      } else {
+        document.documentElement.classList.add(theme)
+      }
+
+      setSuccess("Preferences saved successfully!")
+    } catch (error) {
+      console.error("Error saving preferences:", error)
+      setError(`Failed to save preferences: ${(error as Error).message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Fetch user data and preferences
+  const fetchUserData = async (user: User) => {
+    try {
+      // Fetch user preferences
+      const userPrefsRef = doc(db, `users/${user.uid}/preferences/settings`)
+      const userPrefsSnap = await getDoc(userPrefsRef)
+
+      if (userPrefsSnap.exists()) {
+        const prefsData = userPrefsSnap.data() as UserPreferences
+
+        // Set preferences
+        setEmailNotifications(prefsData.emailNotifications ?? true)
+        setWeeklyDigest(prefsData.weeklyDigest ?? true)
+        setPublicProfile(prefsData.publicProfile ?? false)
+        setTheme(prefsData.theme ?? "system")
+
+        // Apply theme immediately
+        document.documentElement.classList.remove("light", "dark")
+        if (prefsData.theme === "system") {
+          const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+          document.documentElement.classList.add(systemTheme)
+        } else {
+          document.documentElement.classList.add(prefsData.theme || "light")
+        }
+
+        // Set profile info
+        setBio(prefsData.bio || "Full-stack developer passionate about algorithms and data structures.")
+        setLocation(prefsData.location || "San Francisco, CA")
+
+        // Set social links
+        setGithubUrl(prefsData.githubUrl || "")
+        setTwitterUrl(prefsData.twitterUrl || "")
+        setLinkedinUrl(prefsData.linkedinUrl || "")
+        setWebsiteUrl(prefsData.websiteUrl || "")
+      } else {
+        // Set defaults if no preferences exist
+        setBio("Full-stack developer passionate about algorithms and data structures.")
+        setLocation("San Francisco, CA")
+
+        // Apply default theme
+        document.documentElement.classList.remove("light", "dark")
+        document.documentElement.classList.add("light")
+      }
+
+      // Fetch problem stats
+      const querySnapshot = await getDocs(collection(db, `users/${user.uid}/problems`))
+      const difficultyCount = { Easy: 0, Medium: 0, Hard: 0 }
+
+      querySnapshot.forEach((doc) => {
+        const { difficulty } = doc.data()
+        if (difficultyCount[difficulty] !== undefined) {
+          difficultyCount[difficulty]++
+        }
+      })
+
+      const total = difficultyCount.Easy + difficultyCount.Medium + difficultyCount.Hard
+      setProblemsSolved(total)
+
+      setDifficultyData([
+        { name: "Easy", value: difficultyCount.Easy, color: "#22C55E" },
+        { name: "Medium", value: difficultyCount.Medium, color: "#F59E0B" },
+        { name: "Hard", value: difficultyCount.Hard, color: "#EF4444" },
+      ])
+
+      // Calculate streak
+      const userStreak = await calculateStreak(user.uid)
+      setStreak(userStreak)
+
+      // Check 2FA status
+      // check2FAStatus(user)
+    } catch (error) {
+      console.error("Error fetching user data:", error)
+      setError("Failed to load user data. Please try again later.")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Save user preferences
+  /*const saveUserPreferences = async () => {
+    if (!user) return
+
+    setIsLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      const userPrefsRef = doc(db, `users/${user.uid}/preferences/settings`)
+
+      const prefsData: UserPreferences = {
+        emailNotifications,
+        weeklyDigest,
+        publicProfile,
+        theme,
+        bio,
+        location,
+        githubUrl,
+        twitterUrl,
+        linkedinUrl,
+        websiteUrl,
+      }
+
+      await setDoc(userPrefsRef, prefsData, { merge: true })
+
+      setSuccess("Preferences saved successfully!")
+    } catch (error) {
+      console.error("Error saving preferences:", error)
+      setError(`Failed to save preferences: ${(error as Error).message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }*/
 
   useEffect(() => {
     setIsVisible(true)
 
-    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       if (currentUser) {
         setUser(currentUser)
         setDisplayName(currentUser.displayName || "")
         setEmail(currentUser.email || "")
         setAvatarUrl(currentUser.photoURL || "")
+
+        // Check if 2FA is enabled in Firestore
+        try {
+          const userPrefsRef = doc(db, `users/${currentUser.uid}/preferences/settings`)
+          const userPrefsSnap = await getDoc(userPrefsRef)
+
+          if (userPrefsSnap.exists()) {
+            const prefsData = userPrefsSnap.data()
+            setIs2FAEnabled(prefsData.twoFactorEnabled || false)
+          }
+        } catch (error) {
+          console.error("Error checking 2FA status:", error)
+        }
+
+        // Fetch user data
+        fetchUserData(currentUser)
       } else {
         // Redirect to login if not authenticated
         navigate("/login")
@@ -255,6 +540,17 @@ const ProfilePage: React.FC = () => {
       if (email !== user.email) {
         await updateEmail(user, email)
       }
+
+      // Save other profile info to Firestore
+      const userPrefsRef = doc(db, `users/${user.uid}/preferences/settings`)
+      await updateDoc(userPrefsRef, {
+        bio,
+        location,
+        githubUrl,
+        twitterUrl,
+        linkedinUrl,
+        websiteUrl,
+      })
 
       setSuccess("Profile updated successfully!")
     } catch (error) {
@@ -317,12 +613,241 @@ const ProfilePage: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
-      await auth.signOut()
+      await logout()
       navigate("/login")
     } catch (error) {
       setError(`Failed to sign out: ${(error as Error).message}`)
     }
   }
+
+  // 2FA setup
+  /*const setup2FA = async () => {
+    if (!user) return
+
+    setIs2FADialogOpen(true)
+    setStep2FA("phone")
+    setPhoneNumber("")
+    setVerificationCode("")
+    setError("")
+
+    // Initialize RecaptchaVerifier
+    if (recaptchaContainerRef.current) {
+      try {
+        const verifier = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+          size: "normal",
+          callback: () => {
+            // reCAPTCHA solved, allow sending verification code
+          },
+        })
+        setRecaptchaVerifier(verifier)
+      } catch (error) {
+        console.error("Error initializing RecaptchaVerifier:", error)
+        setError(`Failed to initialize verification: ${(error as Error).message}`)
+      }
+    }
+  }*/
+
+  // Update the setup2FA function to use email
+  const setup2FA = async () => {
+    if (!user) return
+
+    setIs2FADialogOpen(true)
+    setStep2FA("email")
+    setEmailFor2FA(user.email || "")
+    setVerificationCode("")
+    setError("")
+    setIs2FAEmailSent(false)
+  }
+
+  // Add a function to send verification email
+  // const sendVerificationEmail = async () => {
+  //   if (!user || !emailFor2FA) return
+
+  //   setIsLoading(true)
+  //   setError("")
+
+  //   try {
+  //     // In a real implementation, you would send a verification email here
+  //     // For this example, we'll simulate it
+
+  //     // Generate a random 6-digit code
+  //     const code = Math.floor(100000 + Math.random() * 900000).toString()
+
+  //     // Store the code in Firestore with an expiration time (10 minutes)
+  //     const verificationRef = await addDoc(collection(db, `users/${user.uid}/verificationCodes`), {
+  //       code,
+  //       email: emailFor2FA,
+  //       createdAt: Timestamp.now(),
+  //       expiresAt: Timestamp.fromDate(new Date(Date.now() + 10 * 60 * 1000)), // 10 minutes
+  //       type: "2FA_SETUP",
+  //     })
+
+  //     setVerificationId(verificationRef.id)
+  //     setStep2FA("code")
+  //     setIs2FAEmailSent(true)
+  //     setSuccess("Verification code sent to your email!")
+
+  //     // In a real app, you would send an actual email with the code
+  //     console.log("Verification code (for demo purposes):", code)
+  //   } catch (error) {
+  //     console.error("Error sending verification email:", error)
+  //     setError(`Failed to send verification email: ${(error as Error).message}`)
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
+
+  /*const sendVerificationCode = async () => {
+    if (!user || !recaptchaVerifier || !phoneNumber) return
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const multiFactorSession = await multiFactor(user).getSession()
+
+      // Send verification code to the user's phone
+      const phoneInfoOptions = {
+        phoneNumber,
+        session: multiFactorSession,
+      }
+
+      const phoneAuthProvider = new PhoneAuthProvider(auth)
+      const verificationId = await phoneAuthProvider.verifyPhoneNumber(phoneInfoOptions, recaptchaVerifier)
+
+      setVerificationId(verificationId)
+      setStep2FA("code")
+      setSuccess("Verification code sent to your phone!")
+    } catch (error) {
+      console.error("Error sending verification code:", error)
+      setError(`Failed to send verification code: ${(error as Error).message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }*/
+
+  // Update the verifyAndEnroll function for email 2FA
+  // const verifyAndEnroll = async () => {
+  //   if (!user || !verificationId || !verificationCode) return
+
+  //   setIsLoading(true)
+  //   setError("")
+
+  //   try {
+  //     // In a real implementation, you would verify the code against what was sent
+  //     // For this example, we'll simulate it by checking against what's in Firestore
+
+  //     const verificationRef = doc(db, `users/${user.uid}/verificationCodes/${verificationId}`)
+  //     const verificationSnap = await getDoc(verificationRef)
+
+  //     if (!verificationSnap.exists()) {
+  //       throw new Error("Verification code not found")
+  //     }
+
+  //     const verificationData = verificationSnap.data()
+  //     const now = Timestamp.now()
+
+  //     if (now.toMillis() > verificationData.expiresAt.toMillis()) {
+  //       throw new Error("Verification code has expired")
+  //     }
+
+  //     if (verificationData.code !== verificationCode) {
+  //       throw new Error("Invalid verification code")
+  //     }
+
+  //     // Enable 2FA in user preferences
+  //     const userPrefsRef = doc(db, `users/${user.uid}/preferences/settings`)
+  //     await updateDoc(userPrefsRef, {
+  //       twoFactorEnabled: true,
+  //       twoFactorMethod: "email",
+  //       twoFactorEmail: emailFor2FA,
+  //     })
+
+  //     setIs2FAEnabled(true)
+  //     setIs2FADialogOpen(false)
+  //     setSuccess("Two-factor authentication enabled successfully!")
+  //   } catch (error) {
+  //     console.error("Error verifying code:", error)
+  //     setError(`Failed to enable 2FA: ${(error as Error).message}`)
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
+
+  /*const verifyAndEnroll = async () => {
+    if (!user || !verificationId || !verificationCode) return
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      // Create credential
+      const credential = PhoneAuthProvider.credential(verificationId, verificationCode)
+      const multiFactorAssertion = PhoneMultiFactorGenerator.assertion(credential)
+
+      // Enroll the second factor
+      await multiFactor(user).enroll(multiFactorAssertion, "My Phone Number")
+
+      setIs2FAEnabled(true)
+      setIs2FADialogOpen(false)
+      setSuccess("Two-factor authentication enabled successfully!")
+    } catch (error) {
+      console.error("Error enrolling second factor:", error)
+      setError(`Failed to enable 2FA: ${(error as Error).message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }*/
+
+  // Update the disable2FA function
+  // const disable2FA = async () => {
+  //   if (!user) return
+
+  //   setIsLoading(true)
+  //   setError("")
+
+  //   try {
+  //     // Disable 2FA in user preferences
+  //     const userPrefsRef = doc(db, `users/${user.uid}/preferences/settings`)
+  //     await updateDoc(userPrefsRef, {
+  //       twoFactorEnabled: false,
+  //       twoFactorMethod: null,
+  //       twoFactorEmail: null,
+  //     })
+
+  //     setIs2FAEnabled(false)
+  //     setSuccess("Two-factor authentication disabled successfully!")
+  //   } catch (error) {
+  //     console.error("Error disabling 2FA:", error)
+  //     setError(`Failed to disable 2FA: ${(error as Error).message}`)
+  //   } finally {
+  //     setIsLoading(false)
+  //   }
+  // }
+
+  /*const disable2FA = async () => {
+    if (!user) return
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const multiFactorUser = multiFactor(user)
+      const enrolledFactors = multiFactorUser.enrolledFactors
+
+      if (enrolledFactors.length > 0) {
+        // Unenroll the first enrolled factor (typically there's only one)
+        await multiFactorUser.unenroll(enrolledFactors[0])
+        setIs2FAEnabled(false)
+        setSuccess("Two-factor authentication disabled successfully!")
+      }
+    } catch (error) {
+      console.error("Error disabling 2FA:", error)
+      setError(`Failed to disable 2FA: ${(error as Error).message}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }*/
 
   return (
     <div className="w-full flex-1 bg-background text-foreground overflow-hidden relative">
@@ -375,12 +900,15 @@ const ProfilePage: React.FC = () => {
                     <h2 className="mt-4 text-xl font-bold">{displayName || "User"}</h2>
                     <p className="text-muted-foreground text-sm">{email}</p>
 
+                    {/* Update the badge to show email 2FA
                     <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Badge variant="secondary">{formattedDate}</Badge> 
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                        Pro Member
-                      </Badge>
-                    </div>
+                      <Badge variant="secondary">Member since {formattedDate}</Badge>
+                      {is2FAEnabled && (
+                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
+                          Email 2FA Enabled
+                        </Badge>
+                      )}
+                    </div> */}
                   </div>
 
                   <Separator className="my-6" />
@@ -448,25 +976,28 @@ const ProfilePage: React.FC = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Problems Solved</span>
                       <div>
-                      <span className="font-medium">{problemsSolved}</span>
+                        <span className="font-medium">{problemsSolved}</span>
                       </div>
                     </div>
-                    <Progress value={problemsSolved} max={100} className="h-2" /> 
+                    <Progress value={problemsSolved} max={100} className="h-2" />
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Current Streak</span>
-                      <span className="font-medium">7 days</span>
+                      <span className="font-medium">
+                        {streak} day{streak !== 1 ? "s" : ""}
+                      </span>
                     </div>
                     <div className="flex gap-1">
-                      {Array.from({ length: 7 }).map((_, i) => (
+                      {Array.from({ length: Math.min(7, streak) }).map((_, i) => (
                         <div
                           key={i}
                           className="h-2 flex-1 rounded-full bg-primary"
                           style={{ opacity: 0.5 + i * 0.07 }}
                         />
                       ))}
+                      {streak === 0 && <div className="h-2 flex-1 rounded-full bg-gray-200" />}
                     </div>
                   </div>
 
@@ -657,131 +1188,141 @@ const ProfilePage: React.FC = () => {
 
                 {/* Account Tab */}
                 <TabsContent value="account">
-                  <Card className="mb-6">
-                    <CardHeader>
+                    {isEmailPasswordUser && ( // ✅ Render only if the user signed in with email/password
+                    <Card className="mb-6">
+                      <CardHeader>
                       <CardTitle>Change Password</CardTitle>
                       <CardDescription>Update your password to keep your account secure</CardDescription>
-                    </CardHeader>
-                    <CardContent>
+                      </CardHeader>
+                      <CardContent>
                       {error && (
                         <Alert variant="destructive" className="mb-4">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertDescription>{error}</AlertDescription>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
                         </Alert>
                       )}
 
                       {success && (
                         <Alert className="mb-4 bg-green-500/10 text-green-500 border-green-500/20">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <AlertDescription>{success}</AlertDescription>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <AlertDescription>{success}</AlertDescription>
                         </Alert>
                       )}
 
                       <form onSubmit={handleUpdatePassword} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="currentPassword">Current Password</Label>
-                          <div className="relative">
-                            <Input
-                              id="currentPassword"
-                              type={showCurrentPassword ? "text" : "password"}
-                              value={currentPassword}
-                              onChange={(e) => setCurrentPassword(e.target.value)}
-                              placeholder="••••••••"
-                              className="pr-10"
-                            />
-                            <button
-                              type="button"
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                            >
-                              {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="newPassword">New Password</Label>
-                          <div className="relative">
-                            <Input
-                              id="newPassword"
-                              type={showPassword ? "text" : "password"}
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              placeholder="••••••••"
-                              className="pr-10"
-                            />
-                            <button
-                              type="button"
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                              onClick={() => setShowPassword(!showPassword)}
-                            >
-                              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <div className="relative">
                           <Input
-                            id="confirmPassword"
-                            type={showPassword ? "text" : "password"}
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            placeholder="••••••••"
+                          id="currentPassword"
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="pr-10"
                           />
+                          <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          >
+                          {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                        </div>
+
+                        <div className="space-y-2">
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <div className="relative">
+                          <Input
+                          id="newPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="pr-10"
+                          />
+                          <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          onClick={() => setShowPassword(!showPassword)}
+                          >
+                          {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                        </div>
+
+                        <div className="space-y-2">
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type={showPassword ? "text" : "password"}
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="••••••••"
+                        />
                         </div>
 
                         <div className="flex justify-end">
-                          <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
-                            {isLoading ? (
-                              <>
-                                <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
-                                Updating...
-                              </>
-                            ) : (
-                              <>
-                                <Key size={16} />
-                                Update Password
-                              </>
-                            )}
-                          </Button>
+                        <Button type="submit" disabled={isLoading} className="flex items-center gap-2">
+                          {isLoading ? (
+                          <>
+                            <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                            Updating...
+                          </>
+                          ) : (
+                          <>
+                            <Key size={16} />
+                            Update Password
+                          </>
+                          )}
+                        </Button>
                         </div>
                       </form>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                    )}
 
                   <Card>
                     <CardHeader>
                       <CardTitle>Account Security</CardTitle>
                       <CardDescription>Manage your account security settings</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-2">
+                      {/* Update the Account Security section to show email 2FA
                       <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label className="text-base">Two-Factor Authentication</Label>
                           <p className="text-sm text-muted-foreground">
-                            Add an extra layer of security to your account
+                            Add an extra layer of security to your account via email verification
                           </p>
                         </div>
-                        <Button variant="outline" className="flex items-center gap-2">
-                          <Lock size={16} />
-                          Enable
-                        </Button>
-                      </div>
+                        {is2FAEnabled ? (
+                          <Button variant="outline" className="flex items-center gap-2" onClick={disable2FA}>
+                            <Lock size={16} />
+                            Disable
+                          </Button>
+                        ) : (
+                          <Button variant="outline" className="flex items-center gap-2" onClick={setup2FA}>
+                            <Lock size={16} />
+                            Enable
+                          </Button>
+                        )}
+                      </div> */}
 
-                      <Separator />
+                      {/* <Separator /> */}
 
                       <div className="flex items-center justify-between">
-                        <div className="space-y-0.5">
+                        {/* <div className="space-y-0.5">
                           <Label className="text-base">Active Sessions</Label>
                           <p className="text-sm text-muted-foreground">
                             Manage devices where you're currently logged in
                           </p>
-                        </div>
-                        <Button variant="outline" className="flex items-center gap-2">
+                        </div> */}
+                        {/* <Button variant="outline" className="flex items-center gap-2">
                           <Shield size={16} />
                           Manage
-                        </Button>
+                        </Button> */}
                       </div>
 
                       <Separator />
@@ -793,7 +1334,7 @@ const ProfilePage: React.FC = () => {
                             Permanently delete your account and all your data
                           </p>
                         </div>
-                        <Button variant="destructive" className="flex items-center gap-2">
+                        <Button variant="destructive" className="flex items-center gap-2" onClick={deleteAccount}>
                           <X size={16} />
                           Delete
                         </Button>
@@ -804,9 +1345,9 @@ const ProfilePage: React.FC = () => {
 
                 {/* Preferences Tab */}
                 <TabsContent value="preferences">
-                  <Card>
+                  {/* <Card>
                     <CardHeader>
-                      <CardTitle>Notifications</CardTitle> {/* Get this functionality running */}
+                      <CardTitle>Notifications</CardTitle>
                       <CardDescription>Manage how you receive notifications</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -840,7 +1381,7 @@ const ProfilePage: React.FC = () => {
                         <Switch id="weeklyDigest" checked={weeklyDigest} onCheckedChange={setWeeklyDigest} />
                       </div>
                     </CardContent>
-                  </Card>
+                  </Card> */}
 
                   <Card className="mt-6">
                     <CardHeader>
@@ -862,7 +1403,7 @@ const ProfilePage: React.FC = () => {
                         </Select>
                       </div>
 
-                      <div className="flex items-center justify-between">
+                      {/* <div className="flex items-center justify-between">
                         <div className="space-y-0.5">
                           <Label htmlFor="publicProfile" className="text-base">
                             Public Profile
@@ -872,17 +1413,26 @@ const ProfilePage: React.FC = () => {
                           </p>
                         </div>
                         <Switch id="publicProfile" checked={publicProfile} onCheckedChange={setPublicProfile} />
-                      </div>
+                      </div> */}
                     </CardContent>
                     <CardFooter className="flex justify-end">
-                      <Button className="flex items-center gap-2">
-                        <Save size={16} />
-                        Save Preferences
+                      <Button className="flex items-center gap-2" onClick={saveUserPreferences} disabled={isLoading}>
+                        {isLoading ? (
+                          <>
+                            <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save size={16} />
+                            Save Preferences
+                          </>
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>
 
-                  <Card className="mt-6">
+                  {/* <Card className="mt-6">
                     <CardHeader>
                       <CardTitle>Data & Privacy</CardTitle>
                       <CardDescription>Manage your data and privacy settings</CardDescription>
@@ -916,13 +1466,102 @@ const ProfilePage: React.FC = () => {
                         </Button>
                       </div>
                     </CardContent>
-                  </Card>
+                  </Card> */}
                 </TabsContent>
               </Tabs>
             </div>
           </div>
         </div>
       </div>
+
+      <Dialog open={is2FADialogOpen} onOpenChange={setIs2FADialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Up Two-Factor Authentication</DialogTitle>
+            <DialogDescription>
+              Add an extra layer of security to your account by enabling two-factor authentication via email.
+            </DialogDescription>
+          </DialogHeader>
+
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert className="mb-4 bg-green-500/10 text-green-500 border-green-500/20">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* {step2FA === "email" ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="emailFor2FA">Email Address</Label>
+                <div className="flex items-center gap-2">
+                  <Mail size={16} className="text-muted-foreground" />
+                  <Input
+                    id="emailFor2FA"
+                    type="email"
+                    value={emailFor2FA}
+                    onChange={(e) => setEmailFor2FA(e.target.value)}
+                    placeholder="your.email@example.com"
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground">We'll send a verification code to this email address</p>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIs2FADialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={sendVerificationEmail} disabled={isLoading || !emailFor2FA}>
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Send Verification Code"
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="verificationCode">Verification Code</Label>
+                <Input
+                  id="verificationCode"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  placeholder="123456"
+                />
+                <p className="text-sm text-muted-foreground">Enter the 6-digit verification code sent to your email</p>
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setStep2FA("email")}>
+                  Back
+                </Button>
+                <Button onClick={verifyAndEnroll} disabled={isLoading || !verificationCode}>
+                  {isLoading ? (
+                    <>
+                      <span className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify & Enable 2FA"
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )} */}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
