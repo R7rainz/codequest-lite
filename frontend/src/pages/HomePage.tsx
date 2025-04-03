@@ -250,7 +250,7 @@ const HomePage: React.FC = () => {
         </section>
 
         {/* Stats Section */}
-        <section
+        {/* <section
           className={`mt-24 transition-all duration-1000 delay-400 transform ${isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}
         >
           <div className="text-center mb-12">
@@ -277,7 +277,7 @@ const HomePage: React.FC = () => {
               <div className="text-muted-foreground">Success Rate</div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* CTA Section */}
         <section
