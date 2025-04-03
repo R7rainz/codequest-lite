@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -345,10 +343,11 @@ const Dashboard = () => {
   }
 
   // Calculate weekly progress data
-  const calculateWeeklyData = (
-    problems: Problem[],
-  ): { name: string; completed: number; total: number; rate: number }[] => {
-    const weeks: { [key: string]: { completed: number; total: number } } = {}
+  type WeekStats = { completed: number; total: number }
+  type WeeklyData = { name: string; completed: number; total: number; rate: number }[]
+
+  const calculateWeeklyData = (problems: Problem[]): WeeklyData => {
+    const weeks: Record<string, WeekStats> = {}
 
     // Group by week
     problems.forEach((problem) => {
