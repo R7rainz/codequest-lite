@@ -28,7 +28,7 @@
   <a href="#tech-stack">Tech Stack</a> •
   <a href="#getting-started">Getting Started</a> •
   <a href="#contributing">Contributing</a> •
-  <a href="#license">License</a>
+  <a href="./LICENSE.md">License</a>
 </p>
 
 <br/>
@@ -241,9 +241,16 @@ We welcome contributions to CodeQuest Lite! Here's how you can get started:
   git commit -m "Add feature: new dashboard chart"
   ```
 3. **Push and create a pull request:**
-
     <ul>
       <li>Compare forks and describe your changes in detail</li>
     </ul>
 
 4. **Address review comments and update your branch as needed.**
+<br />
+
+## License
+Distributed under the MIT License. See LICENSE for more information.
+
+<div align="center"> 
+  <p>© 2023 CodeQuest Lite. All rights reserved.</p> 
+</div>
