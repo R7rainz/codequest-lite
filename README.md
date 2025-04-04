@@ -47,7 +47,6 @@
           <li><b>Track your progress</b> with intuitive visualizations</li>
           <li><b>Categorize problems</b> by difficulty, platform, and custom tags</li>
           <li><b>Monitor your solving time</b> to improve efficiency</li>
-          <li><b>Add notes and solutions</b> for future reference</li>
           <li><b>Sync across devices</b> with cloud storage</li>
           <li><b>Dark/light mode</b> for comfortable coding sessions</li>
         </ul>
