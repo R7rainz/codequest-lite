@@ -218,7 +218,7 @@ We welcome contributions to CodeQuest Lite! Here's how you can get started:
 ### Structure:
 <ul>
 <li> /components – reusable UI parts</li>
-<li> /pages – page-level components</li>
+<li> /pages – main pages</li>
 <li> /hooks – custom hooks</li>
 </ul>
 
