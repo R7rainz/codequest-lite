@@ -71,7 +71,6 @@
     <li><b>Add Problems:</b> Log coding challenges with name, link, difficulty, and platform</li>
     <li><b>Track Status:</b> Mark problems as in-progress, completed, or to revisit</li>
     <li><b>Custom Tags:</b> Create and assign tags to categorize problems (e.g., DP, Trees, Graphs)</li>
-    <li><b>Notes & Solutions:</b> Save your approach, time complexity, and code solutions</li>
     <li><b>Search & Filter:</b> Quickly find problems by name, tag, difficulty, or platform</li>
   </ul>
 </details>
