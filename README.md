@@ -28,7 +28,7 @@
   <a href="#tech-stack">Tech Stack</a> •
   <a href="#getting-started">Getting Started</a> •
   <a href="#contributing">Contributing</a> •
-  <a href="./LICENSE.md">License</a>
+  <a href="./LICENSE">License</a>
 </p>
 
 <br/>
