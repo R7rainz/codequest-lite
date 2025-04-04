@@ -250,5 +250,5 @@ We welcome contributions to CodeQuest Lite! Here's how you can get started:
 Distributed under the MIT License. See LICENSE for more information.
 
 <div align="center"> 
-  <p>© 2023 CodeQuest Lite. All rights reserved.</p> 
+  <p>© 2025 CodeQuest Lite. All rights reserved.</p> 
 </div>
