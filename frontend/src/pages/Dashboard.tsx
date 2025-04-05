@@ -1,4 +1,5 @@
 import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -39,7 +40,7 @@ import {
   Trophy,
   X,
 } from "lucide-react"
-import { format, startOfWeek, startOfMonth, endOfMonth } from "date-fns"
+import { format, startOfWeek, endOfWeek, getWeek, startOfMonth, endOfMonth } from "date-fns"
 import { motion } from "framer-motion"
 import SideNavBar from "@/components/SideNavBar"
 import { auth, db } from "@/config/config"
@@ -251,7 +252,9 @@ const Dashboard = () => {
   const [difficultyData, setDifficultyData] = useState<{ name: string; value: number; color: string }[]>([])
   const [platformData, setPlatformData] = useState<{ name: string; value: number; color: string }[]>([])
   const [tagDistribution, setTagDistribution] = useState<{ name: string; count: number; color: string }[]>([])
-  const [weeklyData, setWeeklyData] = useState<{ name: string; completed: number; total: number; rate: number }[]>([])
+  const [weeklyData, setWeeklyData] = useState<
+    { name: string; completed: number; total: number; rate: number; weekNum: number; dateRange: string }[]
+  >([])
   const [completionRate, setCompletionRate] = useState(0)
   const [streak, setStreak] = useState(0)
   const [avgDifficulty, setAvgDifficulty] = useState("Medium")
@@ -342,39 +345,67 @@ const Dashboard = () => {
     return problems // "all" time range
   }
 
-  // Calculate weekly progress data
+  // Calculate weekly progress data - FIXED
   type WeekStats = { completed: number; total: number }
-  type WeeklyData = { name: string; completed: number; total: number; rate: number }[]
+  type WeeklyData = {
+    name: string
+    completed: number
+    total: number
+    rate: number
+    weekNum: number
+    dateRange: string
+  }[]
 
   const calculateWeeklyData = (problems: Problem[]): WeeklyData => {
-    const weeks: Record<string, WeekStats> = {}
+    // If no problems, return empty array
+    if (problems.length === 0) return []
 
-    // Group by week
-    problems.forEach((problem) => {
-      const weekKey = format(problem.createdAt, "yyyy-ww")
-      if (!weeks[weekKey]) {
-        weeks[weekKey] = { completed: 0, total: 0 }
-      }
+    // Find the earliest and latest dates
+    const sortedProblems = [...problems].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    const earliestDate = sortedProblems[0].createdAt
+    const latestDate = new Date() // Use current date as the latest
 
-      weeks[weekKey].total++
-      if (problem.completed) {
-        weeks[weekKey].completed++
+    // Generate an array of the last 8 weeks
+    const weeks: { start: Date; end: Date }[] = []
+    let currentWeekEnd = new Date()
+
+    // Ensure we're at the end of the current week
+    currentWeekEnd = endOfWeek(currentWeekEnd)
+
+    // Generate the last 8 weeks
+    for (let i = 0; i < 8; i++) {
+      const weekStart = startOfWeek(currentWeekEnd)
+      weeks.unshift({
+        start: new Date(weekStart),
+        end: new Date(currentWeekEnd),
+      })
+      // Move to previous week
+      currentWeekEnd = new Date(weekStart)
+      currentWeekEnd.setDate(currentWeekEnd.getDate() - 1)
+    }
+
+    // Count problems for each week
+    const weeklyData = weeks.map((week, index) => {
+      const weekProblems = problems.filter((p) => p.createdAt >= week.start && p.createdAt <= week.end)
+
+      const completed = weekProblems.filter((p) => p.completed).length
+      const total = weekProblems.length
+
+      // Format the week name and date range
+      const weekNum = getWeek(week.start)
+      const dateRange = `${format(week.start, "MMM d")} - ${format(week.end, "MMM d")}`
+
+      return {
+        name: `Week ${weekNum}`,
+        completed,
+        total,
+        rate: total > 0 ? Math.round((completed / total) * 100) : 0,
+        weekNum,
+        dateRange,
       }
     })
 
-    // Convert to array and sort by date
-    return Object.entries(weeks)
-      .map(([weekKey, data]) => {
-        const [year, week] = weekKey.split("-")
-        return {
-          name: `Week ${week}`,
-          completed: data.completed,
-          total: data.total,
-          rate: data.total > 0 ? Math.round((data.completed / data.total) * 100) : 0,
-        }
-      })
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .slice(-8) // Last 8 weeks
+    return weeklyData
   }
 
   // Calculate streak
@@ -553,7 +584,7 @@ const Dashboard = () => {
         const tagCount: Record<string, number> = {}
         fetchedProblems.forEach((problem) => {
           problem.tags.forEach((tagId) => {
-            tagCount[tagId] = (tagCount[tagId] || 0) + 1
+            tagCount[tagId] = (tagCount[tagId] || 0) + 1 
           })
         })
 
@@ -611,6 +642,27 @@ const Dashboard = () => {
 
   // Get incomplete problems
   const incompleteProblems = problems.filter((p) => !p.completed)
+
+  // Custom tooltip for weekly charts
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const weekData = weeklyData.find((w) => w.name === label)
+      return (
+        <div className="bg-background p-3 border rounded-md shadow-md">
+          <p className="font-medium">{label}</p>
+          {weekData && <p className="text-xs text-muted-foreground">{weekData.dateRange}</p>}
+          <div className="mt-2">
+            {payload.map((entry: any, index: number) => (
+              <p key={`item-${index}`} style={{ color: entry.color }} className="text-sm">
+                {entry.name}: {entry.value} {entry.name === "Completion Rate" ? "%" : ""}
+              </p>
+            ))}
+          </div>
+        </div>
+      )
+    }
+    return null
+  }
 
   return (
     <div>
@@ -872,7 +924,7 @@ const Dashboard = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" />
                                 <YAxis />
-                                <Tooltip />
+                                <Tooltip content={<CustomTooltip />} />
                                 <Legend />
                                 <Area
                                   type="monotone"
@@ -919,7 +971,7 @@ const Dashboard = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" />
                                 <YAxis domain={[0, 100]} />
-                                <Tooltip formatter={(value) => [`${value}%`, "Completion Rate"]} />
+                                <Tooltip content={<CustomTooltip />} />
                                 <Legend />
                                 <Line
                                   type="monotone"
@@ -1186,4 +1238,5 @@ const Dashboard = () => {
 }
 
 export default Dashboard
+
 
