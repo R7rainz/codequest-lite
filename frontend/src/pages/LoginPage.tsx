@@ -1,13 +1,28 @@
-import { useState, useEffect, useRef } from "react"
-import { login, loginWithGithub, loginWithGoogle } from "../config/auth"
+import { useEffect } from "react"
+
+import { useRef } from "react"
+
+import type React from "react"
+
+import { useState } from "react"
+import { login, loginWithGithub, loginWithGoogle, sendPasswordResetEmail } from "../config/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle, Code, Github, Mail } from 'lucide-react'
+import { AlertCircle, Code, Github, Mail, ArrowLeft } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 import { useNavigate, NavLink } from "react-router-dom"
-// Interactive background component (same as HomePage and AboutPage)
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+
+// Interactive background component
 const ParticleBackground: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -94,7 +109,12 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
-  const navigate = useNavigate();
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetSuccess, setResetSuccess] = useState(false)
+  const [resetError, setResetError] = useState("")
+  const [resetLoading, setResetLoading] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     setIsVisible(true)
@@ -112,14 +132,13 @@ const LoginPage: React.FC = () => {
 
     try {
       await login(email, password)
-      navigate("/dashboard");
+      navigate("/dashboard")
       // Success handling is likely handled by your auth system redirecting
     } catch (error) {
       setError(`Failed to log in: ${(error as Error).message}`)
     } finally {
       setIsLoading(false)
     }
-
   }
 
   const handleGoogleLogin = async () => {
@@ -128,7 +147,7 @@ const LoginPage: React.FC = () => {
 
     try {
       await loginWithGoogle()
-      navigate("/dashboard");
+      navigate("/dashboard")
       // Success handling is likely handled by your auth system redirecting
     } catch (error) {
       setError(`Failed to log in with Google: ${(error as Error).message}`)
@@ -143,13 +162,42 @@ const LoginPage: React.FC = () => {
 
     try {
       await loginWithGithub()
-      navigate("/dashboard");
+      navigate("/dashboard")
       // Success handling is likely handled by your auth system redirecting
     } catch (error) {
       setError(`Failed to log in with GitHub: ${(error as Error).message}`)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!resetEmail) {
+      setResetError("Please enter your email address")
+      return
+    }
+
+    setResetLoading(true)
+    setResetError("")
+    setResetSuccess(false)
+
+    try {
+      await sendPasswordResetEmail(resetEmail)
+      setResetSuccess(true)
+    } catch (error) {
+      setResetError(`Failed to send reset email: ${(error as Error).message}`)
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const closeForgotPasswordDialog = () => {
+    setShowForgotPassword(false)
+    setResetEmail("")
+    setResetError("")
+    setResetSuccess(false)
   }
 
   return (
@@ -210,10 +258,13 @@ const LoginPage: React.FC = () => {
                     <label htmlFor="password" className="text-sm font-medium">
                       Password
                     </label>
-                    {/* Forgot password link needs to be setup*/}
-                    <NavLink to="#" className="text-xs text-primary hover:underline">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotPassword(true)}
+                      className="text-xs text-primary hover:underline"
+                    >
                       Forgot password?
-                    </NavLink>
+                    </button>
                   </div>
                   <Input
                     id="password"
@@ -270,6 +321,66 @@ const LoginPage: React.FC = () => {
             </CardFooter>
           </Card>
 
+          {/* Forgot Password Dialog */}
+          <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Reset Password</DialogTitle>
+                <DialogDescription>
+                  Enter your email address and we'll send you a link to reset your password.
+                </DialogDescription>
+              </DialogHeader>
+
+              {resetSuccess ? (
+                <div className="space-y-4 py-4">
+                  <Alert className="bg-green-50 border-green-200">
+                    <AlertDescription className="text-green-800">
+                      Password reset email sent! Please check your inbox and follow the instructions to reset your
+                      password.
+                    </AlertDescription>
+                  </Alert>
+                  <Button onClick={closeForgotPasswordDialog} className="w-full">
+                    Return to Login
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4 py-4">
+                  {resetError && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{resetError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-2">
+                    <label htmlFor="reset-email" className="text-sm font-medium">
+                      Email Address
+                    </label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                      className="bg-background/50"
+                    />
+                  </div>
+
+                  <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
+                    <Button type="button" variant="outline" onClick={closeForgotPasswordDialog} className="sm:mr-2">
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={resetLoading}>
+                      {resetLoading ? "Sending..." : "Send Reset Link"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+
           <style>{`
             @keyframes shake {
               0%, 100% { transform: translateX(0); }
@@ -287,3 +398,4 @@ const LoginPage: React.FC = () => {
 }
 
 export default LoginPage
+

@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Button } from "@/components/ui/button"
@@ -380,7 +382,7 @@ const TrackerPage = () => {
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [showCompleted, setShowCompleted] = useState(true)
+  const [showCompleted, setShowCompleted] = useState(false) // Default to false - hide completed problems
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [isLoading, setIsLoading] = useState(true)
 
@@ -457,6 +459,7 @@ const TrackerPage = () => {
 
       const matchesTags = selectedTags.length === 0 || selectedTags.some((tagId) => problem.tags.includes(tagId))
 
+      // Only show completed problems if showCompleted is true
       const matchesCompletion = showCompleted || !problem.completed
 
       return matchesSearch && matchesTags && matchesCompletion
@@ -511,10 +514,11 @@ const TrackerPage = () => {
     setSelectedTags((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
   }
 
+  // Clear filters now resets to default state (showing only incomplete problems)
   const clearFilters = () => {
     setSearchQuery("")
     setSelectedTags([])
-    setShowCompleted(true)
+    setShowCompleted(false) // Reset to only show incomplete problems
   }
 
   return (
@@ -568,13 +572,13 @@ const TrackerPage = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowCompleted(!showCompleted)}
-                  className={`h-10 ${!showCompleted ? "bg-primary/10 text-primary" : ""}`}
+                  className={`h-10 ${showCompleted ? "bg-primary/10 text-primary" : ""}`}
                 >
                   <Filter size={16} className="mr-1" />
-                  {showCompleted ? "Show All" : "Hide Completed"}
+                  {showCompleted ? "Hide Completed" : "Show All"}
                 </Button>
 
-                {(searchQuery || selectedTags.length > 0 || !showCompleted) && (
+                {(searchQuery || selectedTags.length > 0 || showCompleted) && (
                   <Button variant="ghost" size="sm" onClick={clearFilters} className="h-10">
                     Clear Filters
                   </Button>
@@ -631,11 +635,13 @@ const TrackerPage = () => {
                   </div>
                   <h3 className="text-lg font-medium">No problems found</h3>
                   <p className="text-muted-foreground mt-1">
-                    {searchQuery || selectedTags.length > 0 || !showCompleted
+                    {searchQuery || selectedTags.length > 0
                       ? "Try adjusting your filters or search query"
-                      : "Add your first problem to get started"}
+                      : showCompleted
+                        ? "No problems match your current filters"
+                        : "You have no incomplete problems. Click 'Show All' to see completed problems."}
                   </p>
-                  {(searchQuery || selectedTags.length > 0 || !showCompleted) && (
+                  {(searchQuery || selectedTags.length > 0 || showCompleted) && (
                     <Button variant="outline" className="mt-4" onClick={clearFilters}>
                       Clear Filters
                     </Button>

@@ -5,7 +5,8 @@ import {
     signInWithPopup, 
     GoogleAuthProvider, 
     GithubAuthProvider, 
-    signInWithEmailAndPassword 
+    signInWithEmailAndPassword,
+    sendPasswordResetEmail as firebaseSendPasswordResetEmail,
 } from "firebase/auth";
 import { app } from "./config";
 
@@ -38,3 +39,19 @@ export const loginWithGithub = async () => {
 export const logout = async () => {
     return signOut(auth);
 }
+
+//Reset Password
+export const sendPasswordResetEmail = async (email: string) => {
+  const actionCodeSettings = {
+    url: "https://codequest-lite.vercel.app/login", 
+    handleCodeInApp: false,
+  };
+
+  try {
+    await firebaseSendPasswordResetEmail(auth, email, actionCodeSettings);
+    console.log("Password reset email sent");
+  } catch (error: any) {
+    console.error("Error sending password reset email:", error.code, error.message);
+    throw error; 
+  }
+};
