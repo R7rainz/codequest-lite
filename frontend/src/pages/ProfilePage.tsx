@@ -214,7 +214,7 @@ const ProfilePage: React.FC = () => {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [weeklyDigest, setWeeklyDigest] = useState(true)
   const [publicProfile, setPublicProfile] = useState(false)
-  const [theme, setTheme] = useState("system")
+  const [theme, setTheme] = useState("dark")
 
   // Social links
   const [githubUrl, setGithubUrl] = useState("")
