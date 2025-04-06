@@ -385,10 +385,10 @@ const ProfilePage: React.FC = () => {
         const prefsData = userPrefsSnap.data() as UserPreferences
 
         // Set preferences
-        setEmailNotifications(prefsData.emailNotifications ?? true)
-        setWeeklyDigest(prefsData.weeklyDigest ?? true)
-        setPublicProfile(prefsData.publicProfile ?? false)
-        setTheme(prefsData.theme ?? "system")
+        // setEmailNotifications(prefsData.emailNotifications ?? true)
+        // setWeeklyDigest(prefsData.weeklyDigest ?? true)
+        // setPublicProfile(prefsData.publicProfile ?? false)
+        setTheme(prefsData.theme ?? "dark")
 
         // Apply theme immediately
         document.documentElement.classList.remove("light", "dark")

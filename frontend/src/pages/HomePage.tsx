@@ -1,3 +1,5 @@
+"use client"
+
 import type React from "react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -97,6 +99,7 @@ const chartData = [
 
 const HomePage: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false)
+  const isDarkTheme = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
 
   useEffect(() => {
     setIsVisible(true)
@@ -127,15 +130,15 @@ const HomePage: React.FC = () => {
           </p>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <NavLink to="/signup" className="text-white">
-            <Button size="lg" className="group">
-              Get Started <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            <NavLink to="/signup" className={`text-${isDarkTheme ? "black" : "white"}`}>
+              <Button size="lg" className="group">
+                Get Started <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </NavLink>
-            <NavLink to="/about" className="text-white">
-            <Button size="lg" variant="outline">
-              Learn More
-            </Button>
+            <NavLink to="/about" className={`text-${isDarkTheme ? "black" : "white"}`}>
+              <Button size="lg" variant="outline">
+                Learn More
+              </Button>
             </NavLink>
           </div>
         </section>
@@ -164,11 +167,6 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button variant="ghost" className="w-full">
-                Learn More
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card
@@ -199,11 +197,6 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button variant="ghost" className="w-full">
-                Learn More
-              </Button>
-            </CardFooter>
           </Card>
 
           <Card
@@ -241,11 +234,6 @@ const HomePage: React.FC = () => {
                 </ResponsiveContainer>
               </div>
             </CardContent>
-            <CardFooter>
-              <Button variant="ghost" className="w-full">
-                Learn More
-              </Button>
-            </CardFooter>
           </Card>
         </section>
 
@@ -294,11 +282,11 @@ const HomePage: React.FC = () => {
                   committed to continuous improvement.
                 </p>
               </div>
-              <NavLink to="/signup" className="text-white">
-              <Button size="lg" className="whitespace-nowrap">
-                Get Started Now
-              </Button>
-              </NavLink>    
+              <NavLink to="/signup" className={`text-${isDarkTheme ? "black" : "white"}`}>
+                <Button size="lg" className="whitespace-nowrap">
+                  Get Started Now
+                </Button>
+              </NavLink>
             </CardContent>
           </Card>
         </section>
