@@ -50,14 +50,17 @@ function MainContent({ user }: { user: User | null }) {
       {shouldShowHeader && <Header />}
       <main className="flex-1 mt-16">
         <Routes>
+          {/* Public Routes */}
           <Route path="/" element={user ? <Navigate to="/dashboard" replace /> : <HomePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
           <Route path="/signup" element={user ? <Navigate to="/dashboard" replace /> : <SignUpPage />} />
+
+          {/* Protected Routes */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/tracker" element={<TrackerPage />} />
-          <Route path="/tags" element={<TagsPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/tracker" element={<ProtectedRoute><TrackerPage /></ProtectedRoute>} />
+          <Route path="/tags" element={<ProtectedRoute><TagsPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         </Routes>
       </main>
     </div>
