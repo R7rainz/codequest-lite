@@ -7,7 +7,20 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Search, LinkIcon, X, Tag, Check, ExternalLink, Calendar, Filter, SortAsc, SortDesc } from "lucide-react"
+import {
+  Plus,
+  Search,
+  LinkIcon,
+  X,
+  Tag,
+  Check,
+  ExternalLink,
+  Calendar,
+  Filter,
+  SortAsc,
+  SortDesc,
+  Edit,
+} from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { format } from "date-fns"
 import SideNavBar from "@/components/SideNavBar"
@@ -47,21 +60,23 @@ const useClickAway = (callback: () => void) => {
   return ref
 }
 
-// Floating Form Component
-const AddProblemForm = ({
+// Problem Form Component (handles both adding and editing)
+const ProblemForm = ({
   isOpen,
   onClose,
-  onAdd,
+  onSubmit,
   availableTags,
+  editProblem = null,
 }: {
   isOpen: boolean
   onClose: () => void
-  onAdd: (problem: Omit<Problem, "id" | "createdAt">) => void
+  onSubmit: (problem: Omit<Problem, "id" | "createdAt">, isEditing: boolean, problemId?: string) => void
   availableTags: {
     id: string
     name: string
     color: string
   }[]
+  editProblem?: Problem | null
 }) => {
   const [name, setName] = useState("")
   const [link, setLink] = useState("")
@@ -69,6 +84,27 @@ const AddProblemForm = ({
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Easy")
   const [platform, setPlatform] = useState("")
   const [showLinkInput, setShowLinkInput] = useState(false)
+  const isEditing = !!editProblem
+
+  // Initialize form with problem data when editing
+  useEffect(() => {
+    if (editProblem) {
+      setName(editProblem.name)
+      setLink(editProblem.link)
+      setSelectedTags(editProblem.tags)
+      setDifficulty(editProblem.difficulty)
+      setPlatform(editProblem.platform)
+      setShowLinkInput(!!editProblem.link)
+    } else {
+      // Reset form when not editing
+      setName("")
+      setLink("")
+      setSelectedTags([])
+      setDifficulty("Easy")
+      setPlatform("")
+      setShowLinkInput(false)
+    }
+  }, [editProblem])
 
   const formRef = useClickAway(() => {
     if (isOpen) onClose()
@@ -77,40 +113,17 @@ const AddProblemForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    const user = auth.currentUser
 
-    if (!user) {
-      console.log("No authentication found")
-      return
-    }
-
-    //problem object
-    const newProblem = {
+    const problemData = {
       name,
       link,
       tags: selectedTags,
-      completed: false,
+      completed: editProblem ? editProblem.completed : false,
       difficulty,
       platform,
-      createdAt: Timestamp.now(),
     }
 
-    try {
-      await addDoc(collection(db, `users/${user.uid}/problems`), newProblem)
-      console.log("Problem added successfully")
-
-      onAdd(newProblem)
-    } catch (error) {
-      console.error("Error adding problems", error)
-    }
-
-    // Reset form
-    setName("")
-    setLink("")
-    setSelectedTags([])
-    setDifficulty("Easy")
-    setPlatform("")
-    onClose()
+    onSubmit(problemData, isEditing, editProblem?.id)
   }
 
   const toggleTag = (tagId: string) => {
@@ -132,7 +145,7 @@ const AddProblemForm = ({
             <Card className="border-0 shadow-lg bg-card/90 backdrop-blur-md">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Add New Problem</h2>
+                  <h2 className="text-xl font-bold">{isEditing ? "Edit Problem" : "Add New Problem"}</h2>
                   <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
                     <X size={18} />
                   </Button>
@@ -250,7 +263,7 @@ const AddProblemForm = ({
                     <Button type="button" variant="outline" onClick={onClose}>
                       Cancel
                     </Button>
-                    <Button type="submit">Add Problem</Button>
+                    <Button type="submit">{isEditing ? "Save Changes" : "Add Problem"}</Button>
                   </div>
                 </form>
               </CardContent>
@@ -268,6 +281,7 @@ const ProblemCard = ({
   tags,
   onToggleComplete,
   onDelete,
+  onEdit,
 }: {
   problem: Problem
   tags: {
@@ -277,6 +291,7 @@ const ProblemCard = ({
   }[]
   onToggleComplete: (id: string, completed: boolean) => void
   onDelete: (id: string) => void
+  onEdit: (problem: Problem) => void
 }) => {
   const problemTags = tags.filter((tag) => problem.tags.includes(tag.id))
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -342,7 +357,7 @@ const ProblemCard = ({
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative flex items-center gap-1">
             {showDeleteConfirm ? (
               <div className="flex items-center gap-1">
                 <Button variant="destructive" size="sm" className="h-7 px-2" onClick={() => onDelete(problem.id)}>
@@ -353,14 +368,26 @@ const ProblemCard = ({
                 </Button>
               </div>
             ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-red-500 hover:text-red-700 hover:bg-red-100/50"
-                onClick={() => setShowDeleteConfirm(true)}
-              >
-                <X size={16} />
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-100/50"
+                  onClick={() => onEdit(problem)}
+                  title="Edit problem"
+                >
+                  <Edit size={16} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-100/50"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  title="Delete problem"
+                >
+                  <X size={16} />
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -385,6 +412,7 @@ const TrackerPage = () => {
   const [showCompleted, setShowCompleted] = useState(false) // Default to false - hide completed problems
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [isLoading, setIsLoading] = useState(true)
+  const [currentProblem, setCurrentProblem] = useState<Problem | null>(null)
 
   // Fetch tags from Firestore
   const fetchTags = useCallback(async () => {
@@ -472,10 +500,58 @@ const TrackerPage = () => {
       }
     })
 
-  const handleAddProblem = (newProblem: Omit<Problem, "id" | "createdAt">) => {
-    // The actual adding to Firestore is handled in the form component
-    // Here we just refresh the problems list
-    fetchProblems()
+  const handleFormSubmit = async (
+    problemData: Omit<Problem, "id" | "createdAt">,
+    isEditing: boolean,
+    problemId?: string,
+  ) => {
+    const user = auth.currentUser
+    if (!user) {
+      console.log("No authentication found")
+      return
+    }
+
+    try {
+      if (isEditing && problemId) {
+        // Update existing problem
+        const problemRef = doc(db, `users/${user.uid}/problems`, problemId)
+        await updateDoc(problemRef, {
+          ...problemData,
+          // Don't update createdAt when editing
+        })
+        console.log("Problem updated successfully")
+
+        // Update local state
+        setProblems((prev) =>
+          prev.map((p) =>
+            p.id === problemId
+              ? {
+                  ...p,
+                  ...problemData,
+                }
+              : p,
+          ),
+        )
+      } else {
+        // Add new problem
+        const newProblem = {
+          ...problemData,
+          createdAt: Timestamp.now(),
+        }
+
+        await addDoc(collection(db, `users/${user.uid}/problems`), newProblem)
+        console.log("Problem added successfully")
+
+        // Refresh problems list
+        fetchProblems()
+      }
+    } catch (error) {
+      console.error("Error saving problem", error)
+    }
+
+    // Reset form and close
+    setCurrentProblem(null)
+    setIsFormOpen(false)
   }
 
   const handleToggleComplete = async (id: string, completed: boolean) => {
@@ -510,6 +586,16 @@ const TrackerPage = () => {
     }
   }
 
+  const handleEditProblem = (problem: Problem) => {
+    setCurrentProblem(problem)
+    setIsFormOpen(true)
+  }
+
+  const handleAddNewProblem = () => {
+    setCurrentProblem(null)
+    setIsFormOpen(true)
+  }
+
   const toggleTagFilter = (tagId: string) => {
     setSelectedTags((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
   }
@@ -533,7 +619,7 @@ const TrackerPage = () => {
             </div>
 
             <Button
-              onClick={() => setIsFormOpen(true)}
+              onClick={handleAddNewProblem}
               className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
             >
               <Plus size={18} className="mr-1" />
@@ -626,6 +712,7 @@ const TrackerPage = () => {
                     tags={tags}
                     onToggleComplete={handleToggleComplete}
                     onDelete={handleDeleteProblem}
+                    onEdit={handleEditProblem}
                   />
                 ))
               ) : (
@@ -651,12 +738,16 @@ const TrackerPage = () => {
             </div>
           )}
 
-          {/* Add Problem Form */}
-          <AddProblemForm
+          {/* Problem Form (handles both adding and editing) */}
+          <ProblemForm
             isOpen={isFormOpen}
-            onClose={() => setIsFormOpen(false)}
-            onAdd={handleAddProblem}
+            onClose={() => {
+              setIsFormOpen(false)
+              setCurrentProblem(null)
+            }}
+            onSubmit={handleFormSubmit}
             availableTags={tags}
+            editProblem={currentProblem}
           />
         </div>
       </div>
@@ -665,4 +756,5 @@ const TrackerPage = () => {
 }
 
 export default TrackerPage
+
 
