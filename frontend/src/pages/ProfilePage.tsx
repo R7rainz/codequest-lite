@@ -76,6 +76,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useDeleteAccount } from "@/hooks/useDeleteAccount"
+import SideNavBar from "@/components/SideNavBar"
 
 // Interactive background component
 const ParticleBackground: React.FC = () => {
@@ -852,7 +853,7 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="w-full flex-1 bg-background text-foreground overflow-hidden relative">
       <ParticleBackground />
-
+      <SideNavBar />
       <div className="container mx-auto px-4 py-8">
         <div
           className={`transition-all duration-1000 transform ${isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"}`}

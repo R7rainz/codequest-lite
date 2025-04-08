@@ -42,7 +42,7 @@ function App() {
 
 function MainContent({ user }: { user: User | null }) {
   const location = useLocation();
-  const hideHeaderRoutes = ["/dashboard", "/tracker", "/tags"];
+  const hideHeaderRoutes = ["/dashboard", "/tracker", "/tags", "/profile"];
   const shouldShowHeader = !hideHeaderRoutes.includes(location.pathname);
 
   return (
