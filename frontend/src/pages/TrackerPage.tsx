@@ -196,6 +196,9 @@ const ProblemForm = ({
                           if (inputValue && !inputValue.startsWith("https://")) {
                             inputValue = "https://" + inputValue;
                           }
+                          if (inputValue === "https://") {
+                            inputValue = ""; // Allow the input to be empty
+                          }
                           setLink(inputValue);
                           }}
                           placeholder="https://leetcode.com/problems/..."
