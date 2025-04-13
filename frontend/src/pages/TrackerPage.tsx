@@ -183,7 +183,7 @@ const ProblemForm = ({
                     </div>
 
                     {showLinkInput && (
-                      <div className="relative">
+                        <div className="relative">
                         <LinkIcon
                           size={16}
                           className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
@@ -191,11 +191,17 @@ const ProblemForm = ({
                         <Input
                           id="link"
                           value={link}
-                          onChange={(e) => setLink(e.target.value)}
+                          onChange={(e) => {
+                          let inputValue = e.target.value;
+                          if (inputValue && !inputValue.startsWith("https://")) {
+                            inputValue = "https://" + inputValue;
+                          }
+                          setLink(inputValue);
+                          }}
                           placeholder="https://leetcode.com/problems/..."
                           className="pl-9"
                         />
-                      </div>
+                        </div>
                     )}
                   </div>
 
