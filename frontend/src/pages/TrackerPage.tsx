@@ -190,18 +190,16 @@ const ProblemForm = ({
                         />
                         <Input
                           id="link"
-                          value={link}
+                          value={link.startsWith("https://") ? link.slice(8) : link}
                           onChange={(e) => {
-                          let inputValue = e.target.value;
-                          if (inputValue && !inputValue.startsWith("https://")) {
-                            inputValue = "https://" + inputValue;
+                          const inputValue = e.target.value;
+                          if (inputValue === "") {
+                            setLink(""); // Allow the input to be empty
+                          } else {
+                            setLink("https://" + inputValue);
                           }
-                          if (inputValue === "https://") {
-                            inputValue = ""; // Allow the input to be empty
-                          }
-                          setLink(inputValue);
                           }}
-                          placeholder="https://leetcode.com/problems/..."
+                          placeholder="leetcode.com/problems/..."
                           className="pl-9"
                         />
                         </div>
