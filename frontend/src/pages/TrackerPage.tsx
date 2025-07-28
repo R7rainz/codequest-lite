@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Plus,
   Search,
@@ -183,7 +184,7 @@ const ProblemForm = ({
                     </div>
 
                     {showLinkInput && (
-                        <div className="relative">
+                      <div className="relative">
                         <LinkIcon
                           size={16}
                           className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
@@ -192,17 +193,17 @@ const ProblemForm = ({
                           id="link"
                           value={link.startsWith("https://") ? link.slice(8) : link}
                           onChange={(e) => {
-                          const inputValue = e.target.value;
-                          if (inputValue === "") {
-                            setLink(""); // Allow the input to be empty
-                          } else {
-                            setLink("https://" + inputValue);
-                          }
+                            const inputValue = e.target.value;
+                            if (inputValue === "") {
+                              setLink(""); // Allow the input to be empty
+                            } else {
+                              setLink("https://" + inputValue);
+                            }
                           }}
                           placeholder="leetcode.com/problems/..."
                           className="pl-9"
                         />
-                        </div>
+                      </div>
                     )}
                   </div>
 
@@ -215,15 +216,14 @@ const ProblemForm = ({
                           type="button"
                           variant={difficulty === level ? "default" : "outline"}
                           size="sm"
-                          className={`flex-1 ${
-                            difficulty === level
-                              ? level === "Easy"
-                                ? "bg-green-500 hover:bg-green-600"
-                                : level === "Medium"
-                                  ? "bg-yellow-500 hover:bg-yellow-600"
-                                  : "bg-red-500 hover:bg-red-600"
-                              : ""
-                          }`}
+                          className={`flex-1 ${difficulty === level
+                            ? level === "Easy"
+                              ? "bg-green-500 hover:bg-green-600"
+                              : level === "Medium"
+                                ? "bg-yellow-500 hover:bg-yellow-600"
+                                : "bg-red-500 hover:bg-red-600"
+                            : ""
+                            }`}
                           onClick={() => setDifficulty(level as "Easy" | "Medium" | "Hard")}
                         >
                           {level}
@@ -264,6 +264,18 @@ const ProblemForm = ({
                         </p>
                       )}
                     </div>
+                  </div>
+
+
+                  <div className="space-y-2">
+                    <label htmlFor="notes" className="text-sm font-medium">
+                      Notes
+                    </label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Write your notes here..."
+                      className="min-h-[100px] p-2 border rounded-md bg-background/50"
+                    />
                   </div>
 
                   <div className="flex justify-end gap-2 pt-2">
@@ -342,13 +354,12 @@ const ProblemCard = ({
               <span
                 className={`
                 px-1.5 py-0.5 rounded-full text-xs font-medium
-                ${
-                  problem.difficulty === "Easy"
+                ${problem.difficulty === "Easy"
                     ? "bg-green-500/10 text-green-500"
                     : problem.difficulty === "Medium"
                       ? "bg-yellow-500/10 text-yellow-500"
                       : "bg-red-500/10 text-red-500"
-                }
+                  }
               `}
               >
                 {problem.difficulty}
@@ -533,9 +544,9 @@ const TrackerPage = () => {
           prev.map((p) =>
             p.id === problemId
               ? {
-                  ...p,
-                  ...problemData,
-                }
+                ...p,
+                ...problemData,
+              }
               : p,
           ),
         )
